@@ -316,9 +316,9 @@ Authorization: Bearer <token>
 
 ## 4. TEAM DASHBOARD (리더 전용)
 
-### 4.1 팀 헬스 스코어 조회
+### 4.1 팀 대시보드 조회 (팀 헬스 스코어)
 ```
-GET /api/v1/teams/{teamId}/health-score
+GET /api/v1/teams/{teamId}/dashboard
 Authorization: Bearer <token> (LEADER)
 ```
 
@@ -329,24 +329,20 @@ Authorization: Bearer <token> (LEADER)
   "code": "SUCCESS",
   "message": "요청이 성공적으로 처리되었습니다.",
   "data": {
-    "currentScore": 74,
-    "previousScore": 62,
-    "diff": 12,
+    "teamId": 1,
+    "teamHealthScore": 74.0,
     "trend": "IMPROVING",
-    "history": [
-      { "yearMonth": "2025-11", "score": 55 },
-      { "yearMonth": "2025-12", "score": 58 },
-      { "yearMonth": "2026-01", "score": 60 },
-      { "yearMonth": "2026-02", "score": 63 },
-      { "yearMonth": "2026-03", "score": 62 },
-      { "yearMonth": "2026-04", "score": 74 }
+    "alerts": [
+      "강다은 — Initiative 최근 3회 평균 대비 100% 감소",
+      "윤재원 — Safety Score 기준 이하 (Silent Risk)"
     ]
   }
 }
 ```
 
 > **팀 헬스 스코어 산출**: `safetyScore 평균 × 0.6 + surveyScore 평균 × 0.4`  
-> **trend**: `IMPROVING` (전월 대비 +5 이상) / `STABLE` (±5 이내) / `DECLINING` (-5 이하)
+> **trend**: `IMPROVING` (전월 대비 +5 이상) / `STABLE` (±5 이내) / `DECLINING` (-5 이하)  
+> **alerts**: 30% 이상 하락한 멤버 알림 (Fact-Based 문구, AI 해석 라벨 없음)
 
 ---
 
@@ -410,32 +406,31 @@ Authorization: Bearer <token> (LEADER)
   "success": true,
   "code": "SUCCESS",
   "message": "요청이 성공적으로 처리되었습니다.",
-  "data": {
-    "members": [
-      {
-        "memberId": 1,
-        "name": "강다은",
-        "surveyScore": 87,
-        "safetyScore": 31,
-        "quadrant": "SILENT_RISK"
-      },
-      {
-        "memberId": 3,
-        "name": "김민준",
-        "surveyScore": 80,
-        "safetyScore": 82,
-        "quadrant": "STABLE"
-      }
-    ],
-    "quadrantCounts": {
-      "STABLE": 5,
-      "SILENT_RISK": 2,
-      "EXPLICIT_RISK": 1,
-      "CONSERVATIVE": 3
+  "data": [
+    {
+      "memberId": 1,
+      "memberName": "강다은",
+      "surveyScore": 87.0,
+      "safetyScore": 31.0,
+      "honestyGap": 56.0,
+      "direction": "OVERREPORT",
+      "riskLevel": "DANGER"
+    },
+    {
+      "memberId": 3,
+      "memberName": "김민준",
+      "surveyScore": 80.0,
+      "safetyScore": 82.0,
+      "honestyGap": -2.0,
+      "direction": "UNDERREPORT",
+      "riskLevel": "SAFE"
     }
-  }
+  ]
 }
 ```
+
+> 응답은 `List<RadarDataPoint>` (배열). quadrant 문자열 대신 `direction` + `riskLevel`로 분리.  
+> FE에서 사분면 판별: `surveyScore ≥ 50 && safetyScore ≥ 50` → STABLE 등 (PRD 3.3 참조).
 
 > **사분면 기준** (X축: surveyScore, Y축: safetyScore)
 > | 사분면 | 조건 | 의미 |
@@ -663,6 +658,50 @@ Authorization: Bearer <token>
 
 ---
 
+### 6.3 서베이 이력 조회 (멤버)
+```
+GET /api/v1/surveys/history
+Authorization: Bearer <token> (MEMBER)
+```
+
+**Query Params** (Spring Pageable)
+| 파라미터 | 필수 | 기본값 | 설명 |
+|---------|------|--------|------|
+| page | X | 0 | 페이지 번호 (0-indexed) |
+| size | X | 20 | 페이지 크기 |
+| sort | X | submittedAt,desc | 정렬 기준 |
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": {
+    "content": [
+      {
+        "meetingId": 10,
+        "submittedAt": "2026-05-08T13:30:00",
+        "scores": {
+          "energyLevel": 3,
+          "issues": ["업무 블로커", "커리어 성장"],
+          "desiredRoles": ["방향성 코칭"],
+          "surveyScore": 50.0
+        }
+      }
+    ],
+    "totalElements": 12,
+    "totalPages": 1,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+> 본인의 과거 서베이 응답 이력을 최신순으로 조회. `scores` 필드는 JSONB 그대로 반환.
+
+---
+
 ## 7. RECORDING & ANALYSIS
 
 ### 7.1 녹음 파일 업로드
@@ -721,7 +760,7 @@ const uploadRecording = async (meetingId: number, blob: Blob, durationSec: numbe
 
 ### 7.2 분석 진행 상태 폴링
 ```
-GET /api/v1/analysis/{meetingId}/status
+GET /api/v1/meetings/{meetingId}/status
 Authorization: Bearer <token>
 ```
 
@@ -1090,6 +1129,34 @@ Authorization: Bearer <token> (LEADER)
 
 ---
 
+### 9.4 약속 이행률 조회 (리더)
+```
+GET /api/v1/promises/fulfillment-rate
+Authorization: Bearer <token> (LEADER)
+```
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": {
+    "total": 10,
+    "doneCount": 6,
+    "missedCount": 2,
+    "pendingCount": 2,
+    "doneRate": 0.6,
+    "missedRate": 0.2,
+    "pendingRate": 0.2
+  }
+}
+```
+
+> 요청자(리더)가 등록한 전체 약속에 대한 이행률 통계. 리더 대시보드 Promise Ledger 수치에 활용.
+
+---
+
 ## 10. NEXT ACTION PLAN
 
 ### 10.1 액션 플랜 완료 체크
@@ -1216,6 +1283,104 @@ Authorization: Bearer <token>
 ```
 
 > 상위 5건은 `impactMetric`이 있는 이벤트를 최신순으로 정렬
+
+---
+
+## 12. MEMBER ANALYTICS (멤버용 분석)
+
+### 12.1 Speech Act 트렌드 조회
+```
+GET /api/v1/members/me/speech-trend
+Authorization: Bearer <token> (MEMBER)
+```
+
+**Query Params** (Spring Pageable)
+| 파라미터 | 필수 | 기본값 | 설명 |
+|---------|------|--------|------|
+| page | X | 0 | 페이지 번호 |
+| size | X | 20 | 페이지 크기 |
+| sort | X | createdAt,desc | 정렬 기준 |
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": {
+    "content": [
+      {
+        "meetingId": 10,
+        "scheduledAt": "2026-05-08T14:00:00",
+        "vulnerabilityCount": 1,
+        "dissentCount": 1,
+        "initiativeCount": 0
+      },
+      {
+        "meetingId": 9,
+        "scheduledAt": "2026-04-24T14:00:00",
+        "vulnerabilityCount": 3,
+        "dissentCount": 2,
+        "initiativeCount": 2
+      }
+    ],
+    "totalElements": 12,
+    "totalPages": 1,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+> 멤버 본인의 미팅별 Speech Act 발화 횟수 시계열. Career Memory 화면의 행동 변화 그래프에 활용.
+
+---
+
+### 12.2 멤버 포트폴리오 조회
+```
+GET /api/v1/members/me/portfolio
+Authorization: Bearer <token> (MEMBER)
+```
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": {
+    "meetingHistory": [
+      {
+        "meetingId": 10,
+        "scheduledAt": "2026-05-08T14:00:00",
+        "title": "1on1 #12 — 이준혁 팀장"
+      }
+    ],
+    "scoreTrend": [
+      {
+        "meetingId": 10,
+        "scheduledAt": "2026-05-08T14:00:00",
+        "safetyScore": 31.0
+      },
+      {
+        "meetingId": 9,
+        "scheduledAt": "2026-04-24T14:00:00",
+        "safetyScore": 72.0
+      }
+    ],
+    "topCareerTags": ["MSA 전환", "팀 DX 리드", "결제 시스템"],
+    "feedbackSummaries": [
+      "QA 리소스 이슈를 명확하게 제기했습니다.",
+      "Initiative 0회 — 베이스라인 대비 100% 하락"
+    ]
+  }
+}
+```
+
+> `meetingHistory`: 참여한 미팅 목록  
+> `scoreTrend`: 미팅별 Safety Score 추이 (선 그래프용)  
+> `topCareerTags`: AI가 추출한 커리어 태그 상위 목록  
+> `feedbackSummaries`: 최근 피드백 제목 요약 목록
 
 ---
 
@@ -1388,7 +1553,7 @@ export function useMeetingStatus(meetingId: number, enabled: boolean) {
         return;
       }
       try {
-        const { data } = await client.get(`/analysis/${meetingId}/status`);
+        const { data } = await client.get(`/meetings/${meetingId}/status`);
         setStatus(data.data);
         if (data.data.step === 'COMPLETED' || data.data.step === 'FAILED') {
           clearInterval(intervalRef.current);
@@ -1522,3 +1687,4 @@ trend = 전월 대비 +5 이상 → IMPROVING / ±5 이내 → STABLE / -5 이�
 | 2026-05-06 | v2.0 | 피봇 반영 (aiScore→safetyScore, aiPatterns 제거, speechActs 3종 전환, Fact-Based Output 적용), FE 구현 가이드 추가, 검증 규칙 보강, 서베이 선택지 상세화 |
 | 2026-05-12 | v2.1 | Scoring 공식 확정 (Safety Score 변환표, Survey Score 산출, Honesty Gap 방향성 기반 전환, 사분면 정의), APPENDIX 추가 |
 | 2026-05-15 | v2.2 | 블로커 보드 → 블로커 피라미드 명칭 변경 (blocker-board → blocker-pyramid), 5/15 회의 결정사항 반영 |
+| 2026-05-28 | v2.3 | 실코드 기준 동기화 — URL 불일치 수정 (health-score→dashboard, analysis/{id}/status→meetings/{id}/status), quadrant 응답 구조 변경 (honestyGap/direction/riskLevel 추가), 신규 API 추가 (6.3 surveys/history, 9.4 promises/fulfillment-rate, 12. Member Analytics) |
