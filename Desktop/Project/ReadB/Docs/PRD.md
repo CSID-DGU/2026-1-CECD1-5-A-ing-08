@@ -349,10 +349,10 @@ GET    /api/v1/surveys/history               ← 멤버 서베이 이력 (페이
 GET    /api/v1/promises?teamId=
 GET    /api/v1/promises/fulfillment-rate     ← 리더 약속 이행률 통계
 
-# 멤버
-GET    /api/v1/career-memory
-GET    /api/v1/members/me/speech-trend       ← 멤버 Speech Act 트렌드 (페이지네이션)
-GET    /api/v1/members/me/portfolio          ← 멤버 포트폴리오 (미팅 이력 + 점수 트렌드 + 커리어 태그)
+# 멤버 (Career Memory)
+GET    /api/v1/members/{memberId}/career-stats
+GET    /api/v1/members/{memberId}/career-timeline
+GET    /api/v1/members/{memberId}/career-showcase
 ```
 
 상세 요청/응답 스펙: **API_SPEC.md** 참조
@@ -427,3 +427,4 @@ LED 램프를 통한 리더 발화 타이밍 실시간 안내.
 | 2026-05-12 | v2.0 | 피봇 반영 (aiScore→safetyScore, speechActs 3종, Fact-Based Output) |
 | 2026-05-15 | v2.2 | Scoring 공식 확정, Honesty Gap 방향성 전환, 블로커 피라미드 명칭, 해커톤 마일스톤 |
 | 2026-05-28 | v2.3 | API 엔드포인트 목록 실코드 기준 갱신 — 신규 엔드포인트 추가 (surveys/history, promises/fulfillment-rate, members/me/speech-trend, members/me/portfolio), 미팅 목록/단건 조회·팀 생성·참여 엔드포인트 누락분 보완 |
+| 2026-05-29 | v2.4 | 멤버 엔드포인트 정리 — /me 기반 제거, 11절 career-stats/timeline/showcase로 통일 (PRD 멤버 화면 기준, MVP 범위 외 speech-trend/portfolio 제외) |
