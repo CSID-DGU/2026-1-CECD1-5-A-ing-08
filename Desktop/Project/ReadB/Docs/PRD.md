@@ -1,6 +1,6 @@
 # ReadB PRD (Product Requirements Document)
 
-> **버전**: v2.2 | **최종 업데이트**: 2026-05-15 | **작성**: PM 이승규
+> **버전**: v2.3 | **최종 업데이트**: 2026-06-03 | **작성**: PM 이승규
 
 ---
 
@@ -163,6 +163,14 @@ trend = 전월 대비 +5 이상 → IMPROVING / ±5 이내 → STABLE / -5 이�
 - 30% 이상 하락 → Silent Risk 알림 (리더 대시보드)
 - Cold Start: 1~2회차는 절대값 스코어링만 (베이스라인 미형성)
 - 알림 문구: "최근 3회 평균 대비 Initiative 42% 감소" (AI 해석 아님)
+- **Meeting RAG 구현**: 분석 시 이전 3회 Safety Score 평균, V/D/I 평균, 블로커 키워드를 step3 프롬프트에 자동 주입 → 피드백에 변화량 포함
+
+### 3.6 1on1 소통 균형 (발화 비율)
+
+- GPT가 대화 전사 텍스트의 문자수 기준으로 리더/멤버 발화 비율 추출
+- 팀 대시보드에 멤버별 최신 1on1 발화 비율을 leaderRatio 내림차순으로 표시
+- 상태 기준: `위험` (leaderRatio ≥ 70%) / `관찰` (50–69%) / `적정` (< 50%)
+- 리포트 화면에도 실제 측정 발화 비율 및 권장 비율(40%) 마커 표시
 
 ---
 
@@ -177,8 +185,8 @@ trend = 전월 대비 +5 이상 → IMPROVING / ±5 이내 → STABLE / -5 이�
 
 ③ AI PIPELINE (LLM Cascading)
    Step 1: Whisper STT (음성 → Transcript + 화자 분리 + 타임스탬프)
-   Step 2: GPT-4o-mini (Speech Act 분류 + 주제 매핑 + 약속 추출)
-   Step 3: Claude Sonnet (3-Gap 스코어링 + 코칭 피드백 + Career 태그)
+   Step 2: GPT-mini (CoT + Few-shot — Speech Act 분류 + 주제 매핑 + 약속 추출 + 발화 비율)
+   Step 3: GPT-mini (Meeting RAG — 이전 3회 Rolling Baseline 주입 + 3-Gap 스코어링 + 코칭 피드백 + Career 태그)
 
 ④ 3-GAP SCORING
    Safety Score (V+D+I) + Alignment Gap + Honesty Gap + Execution Gap
@@ -196,7 +204,7 @@ trend = 전월 대비 +5 이상 → IMPROVING / ±5 이내 → STABLE / -5 이�
 
 | 화면 | 핵심 데이터 | 설명 |
 |------|-------------|------|
-| **팀 대시보드** | 팀 헬스 스코어, trend, 알림 | 팀 전체 건강 상태 개요 |
+| **팀 대시보드** | 팀 헬스 스코어, trend, 알림, 1on1 소통 균형 | 팀 전체 건강 상태 개요 |
 | **레이더 사분면** | X:survey Y:safety 산점도 | 멤버별 포지션 시각화 (STABLE/SILENT_RISK/EXPLICIT_RISK/CONSERVATIVE) |
 | **블로커 피라미드** | 키워드 + 멤버별 발화 횟수 | 팀 전체에서 반복 언급되는 이슈 파악 |
 | **Pre-Meeting 브리핑 카드** | 멤버 서베이 + 직전 Safety Score + 미이행 약속 + 추천 주제 | 미팅 시작 전 리더가 멤버 상태를 한눈에 파악 |
@@ -248,7 +256,7 @@ BE API 응답 설계부터 FE 화면 표시까지 관통하는 핵심 원칙.
 |------|------|
 | **Backend** | Java 17 + Spring Boot 3.2 + JPA + PostgreSQL(Supabase) + JWT(jjwt 0.12+) |
 | **Frontend** | React 18 + TypeScript 5 + Vite + Tailwind + shadcn/ui + Recharts + Zustand |
-| **AI** | OpenAI Whisper(STT) + GPT-4o-mini(구조화) + Claude Sonnet(판단) + OpenAI Embedding + pgvector(RAG) |
+| **AI** | OpenAI Whisper(STT) + GPT-mini(구조화·스코어링, CoT+Few-shot+Meeting RAG) + OpenAI Embedding + pgvector(RAG) |
 | **배포** | Railway(BE) + Vercel(FE) + Supabase(DB + Storage) |
 | **IoT** | Raspberry Pi + LED 램프 (리더 발화 타이밍 안내) |
 
@@ -256,11 +264,17 @@ BE API 응답 설계부터 FE 화면 표시까지 관통하는 핵심 원칙.
 
 ```
 Step 1: Whisper API → Transcript (화자 분리 + 타임스탬프)
-Step 2: GPT-4o-mini (저비용) → Speech Act 분류, 주제 매핑, Promise 추출
-Step 3: Claude Sonnet (고품질) → 3-Gap 스코어링, 코칭 피드백, Career Memory 태그
+Step 2: GPT-mini (CoT + Few-shot)
+        → Speech Act 분류 (Searle 1969 + Edmondson 1999 학술 근거)
+        → 주제 매핑, Promise 추출, 발화 비율(문자수 기준)
+Step 3: GPT-mini (Meeting RAG — 이전 3회 Rolling Baseline 주입)
+        → 3-Gap 스코어링, 코칭 피드백(변화량 포함), Career Memory 태그
 ```
 
-비용이 낮은 모델로 전처리, 고품질 모델로 판단하는 구조.
+**Speech Act 분류 설계**:
+- CoT 절차: 화자 판별 → 멤버 발화 필터링 → 의도 판단 → 발화 비율 → 기타 추출
+- Few-shot: 포함 3개 + 제외 2개 (경계 사례 명시)
+- precision > recall 원칙 (애매하면 미포함)
 
 ### Adapter Pattern
 

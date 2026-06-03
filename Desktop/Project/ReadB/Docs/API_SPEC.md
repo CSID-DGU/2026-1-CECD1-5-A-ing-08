@@ -394,6 +394,38 @@ Authorization: Bearer <token> (LEADER)
 
 ---
 
+### 4.4 팀 발화 비율 랭킹 조회
+```
+GET /api/v1/teams/{teamId}/talk-ratio-ranking
+Authorization: Bearer <token> (LEADER)
+```
+
+> 팀 대시보드 '1on1 소통 균형' 패널에 사용. 각 멤버의 최신 1on1 발화 비율을 leaderRatio 내림차순으로 반환.
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    { "memberId": 3, "name": "김민준", "leaderRatio": 72, "memberRatio": 28, "status": "위험" },
+    { "memberId": 1, "name": "강다은", "leaderRatio": 55, "memberRatio": 45, "status": "관찰" },
+    { "memberId": 2, "name": "박지호", "leaderRatio": 38, "memberRatio": 62, "status": "적정" }
+  ]
+}
+```
+
+| 필드 | 설명 |
+|------|------|
+| `leaderRatio` | GPT 분석 기준 리더 발화 비율 (%) |
+| `memberRatio` | GPT 분석 기준 멤버 발화 비율 (%) |
+| `status` | `위험` (leaderRatio ≥ 70) / `관찰` (50–69) / `적정` (< 50) |
+
+> 분석 완료(COMPLETED) 미팅이 없는 멤버는 결과에서 제외됩니다. data가 빈 배열이면 팀 내 완료 미팅 없음.
+
+---
+
 ### 4.3 팀 사분면 레이더 조회
 ```
 GET /api/v1/teams/{teamId}/quadrant
@@ -1562,6 +1594,45 @@ export function useMeetingStatus(meetingId: number, enabled: boolean) {
 
 > 이 섹션은 BE 구현 및 FE 시각화의 기준 문서입니다. 모든 점수 산출은 이 공식에 따릅니다.
 
+### A.0 AI 분석 파이프라인
+
+**파이프라인 구성 (v2.6 기준)**
+
+```
+Whisper STT
+  → GPT-mini (Step 2) — Speech Act 분류 + 주제/블로커/약속 추출 + 발화 비율
+  → GPT-mini (Step 3) — 3-Gap 스코어링 + 코칭 피드백 + Career 태그
+```
+
+**Step 2 프롬프트 설계 원칙**
+
+| 항목 | 내용 |
+|------|------|
+| 이론 근거 | Searle(1969) Speech Act Theory, Edmondson(1999) Psychological Safety |
+| 추론 방식 | CoT (Chain-of-Thought): Step A 화자 판별 → B 멤버 필터링 → C 의도 판단 → D 발화 비율 → E 기타 추출 |
+| 분류 원칙 | precision > recall (애매하면 포함하지 않음), 원문 그대로 인용 |
+| Few-shot | 포함 예시 3개 + 제외 예시 2개 (사교적 겸손, 단순 수락 경계 사례) |
+| 발화 비율 | 문자수 기준 정수 산출, leaderRatio + memberRatio = 100 보장 |
+
+**Step 3 프롬프트 — Meeting RAG (이전 미팅 컨텍스트 주입)**
+
+분석 시 최근 3회 미팅의 Rolling Baseline을 step3 프롬프트에 자동 주입:
+```
+[이전 미팅 컨텍스트 — Rolling Baseline]
+최근 N회 미팅 평균:
+- Safety Score 평균: X.X
+- Vulnerability 평균: X.X회
+- Constructive Dissent 평균: X.X회
+- Initiative 평균: X.X회
+- 이전 블로커: 키워드1, 키워드2
+```
+
+→ 피드백에 변화량 자동 포함: "Vulnerability 발화가 이전 3회 평균 2.3건에서 0건으로 감소했습니다"
+
+> 첫 미팅이거나 이전 분석 데이터가 없는 경우 컨텍스트 주입 없이 절대값 기반 분석.
+
+---
+
 ### A.1 Safety Score (Y축) — Speech Act 기반
 
 ```
@@ -1670,3 +1741,4 @@ trend = 전월 대비 +5 이상 → IMPROVING / ±5 이내 → STABLE / -5 이�
 | 2026-05-28 | v2.3 | 실코드 기준 동기화 — URL 불일치 수정 (health-score→dashboard, analysis/{id}/status→meetings/{id}/status), quadrant 응답 구조 변경 (honestyGap/direction/riskLevel 추가), 신규 API 추가 (6.3 surveys/history, 9.4 promises/fulfillment-rate, 12. Member Analytics) |
 | 2026-05-29 | v2.4 | 12절(MEMBER ANALYTICS) 제거 — speech-trend/portfolio/career-memory는 MVP 범위 외 또는 11절로 커버. PRD 멤버 화면 기준 정렬 |
 | 2026-06-02 | v2.5 | 8절 Pre-Meeting Briefing 추가 (GET /meetings/{id}/pre-briefing) — 브리핑 카드: survey, lastMeeting 요약, pendingPromises, recommendedTopics. 기존 8~11절 번호 순서 변경 |
+| 2026-06-03 | v2.6 | 4.4절 팀 발화 비율 랭킹 추가 (GET /teams/{id}/talk-ratio-ranking). GPT 발화 비율 항상 40 고정 버그 수정. A.0절 AI 파이프라인 문서화 (CoT + Few-shot + Meeting RAG) |
