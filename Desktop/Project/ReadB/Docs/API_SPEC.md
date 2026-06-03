@@ -394,6 +394,38 @@ Authorization: Bearer <token> (LEADER)
 
 ---
 
+### 4.4 팀 발화 비율 랭킹 조회
+```
+GET /api/v1/teams/{teamId}/talk-ratio-ranking
+Authorization: Bearer <token> (LEADER)
+```
+
+> 팀 대시보드 '1on1 소통 균형' 패널에 사용. 각 멤버의 최신 1on1 발화 비율을 leaderRatio 내림차순으로 반환.
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    { "memberId": 3, "name": "김민준", "leaderRatio": 72, "memberRatio": 28, "status": "위험" },
+    { "memberId": 1, "name": "강다은", "leaderRatio": 55, "memberRatio": 45, "status": "관찰" },
+    { "memberId": 2, "name": "박지호", "leaderRatio": 38, "memberRatio": 62, "status": "적정" }
+  ]
+}
+```
+
+| 필드 | 설명 |
+|------|------|
+| `leaderRatio` | GPT 분석 기준 리더 발화 비율 (%) |
+| `memberRatio` | GPT 분석 기준 멤버 발화 비율 (%) |
+| `status` | `위험` (leaderRatio ≥ 70) / `관찰` (50–69) / `적정` (< 50) |
+
+> 분석 완료(COMPLETED) 미팅이 없는 멤버는 결과에서 제외됩니다. data가 빈 배열이면 팀 내 완료 미팅 없음.
+
+---
+
 ### 4.3 팀 사분면 레이더 조회
 ```
 GET /api/v1/teams/{teamId}/quadrant
@@ -814,7 +846,85 @@ Authorization: Bearer <token>
 
 ---
 
-## 8. 1ON1 REPORT
+## 8. PRE-MEETING BRIEFING
+
+### 8.0 미팅 전 브리핑 카드 조회 (리더)
+```
+GET /api/v1/meetings/{meetingId}/pre-briefing
+Authorization: Bearer <token> (LEADER)
+```
+
+> 미팅 시작 전 리더에게 멤버 상태를 요약 제공. 미팅 pending 상태에서만 의미 있음.
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": {
+    "meetingId": 10,
+    "round": 12,
+    "memberName": "강다은",
+    "memberJobTitle": "시니어 FE 엔지니어",
+    "scheduledAt": "2026-06-05T14:00:00",
+
+    "survey": {
+      "submitted": true,
+      "energyLevel": 3,
+      "issues": ["업무 블로커", "커리어 성장"],
+      "desiredRoles": ["방향성 코칭"],
+      "surveyScore": 50.0
+    },
+
+    "lastMeeting": {
+      "safetyScore": 31.0,
+      "safetyScoreChange": -15.0,
+      "quadrant": "SILENT_RISK",
+      "honestyGap": {
+        "direction": "OVERREPORT",
+        "riskLevel": "DANGER"
+      },
+      "speechActAlerts": [
+        "Initiative 0회 (이전 평균 2.8회)",
+        "Vulnerability 0회 (이전 평균 2.3회)"
+      ],
+      "blockerKeywords": ["QA 리소스 부족", "코드 리뷰 병목"]
+    },
+
+    "pendingPromises": [
+      {
+        "promiseId": 2,
+        "content": "AWS 프로덕션 접근 권한 부여",
+        "dueDate": "2026-04-20",
+        "overdue": true
+      }
+    ],
+
+    "recommendedTopics": [
+      "약속 팔로업: AWS 프로덕션 접근 권한 부여",
+      "멤버 발화가 줄었습니다 — 편하게 이야기할 수 있는지 확인해보세요",
+      "서베이 이슈 확인: 업무 블로커"
+    ]
+  }
+}
+```
+
+| 필드 | 설명 |
+|------|------|
+| `survey.submitted` | 이번 미팅 사전 서베이 제출 여부 |
+| `lastMeeting.safetyScoreChange` | 직전 미팅 Safety Score - 이전 3회 평균 (양수 = 개선) |
+| `lastMeeting.quadrant` | 직전 미팅 기준 사분면 (STABLE/SILENT_RISK/EXPLICIT_RISK/CONSERVATIVE) |
+| `lastMeeting.speechActAlerts` | Fact-Based 관찰 사실만 — AI 해석 라벨 없음 |
+| `pendingPromises.overdue` | deadline이 오늘 이전이면 true |
+| `recommendedTopics` | 미이행 약속 팔로업 항상 최우선, 이후 상태 기반 제안 |
+
+> **FE 구현 참고**: survey.submitted가 false이면 "서베이 미제출" 상태 표시.  
+> lastMeeting이 null이면 첫 미팅(이전 데이터 없음).
+
+---
+
+## 9. 1ON1 REPORT (미팅 후 분석 리포트)
 
 ### 8.1 리더 리포트 조회
 ```
@@ -1020,7 +1130,7 @@ Authorization: Bearer <token> (MEMBER)
 
 ---
 
-## 9. PROMISE (약속 장부)
+## 10. PROMISE (약속 장부)
 
 ### 9.1 약속 생성 (리더)
 ```
@@ -1157,7 +1267,7 @@ Authorization: Bearer <token> (LEADER)
 
 ---
 
-## 10. NEXT ACTION PLAN
+## 11. NEXT ACTION PLAN
 
 ### 10.1 액션 플랜 완료 체크
 ```
@@ -1180,7 +1290,7 @@ Authorization: Bearer <token> (LEADER)
 
 ---
 
-## 11. CAREER MEMORY (멤버용)
+## 12. CAREER MEMORY (멤버용)
 
 ### 11.1 커리어 통계 조회
 ```
@@ -1283,104 +1393,6 @@ Authorization: Bearer <token>
 ```
 
 > 상위 5건은 `impactMetric`이 있는 이벤트를 최신순으로 정렬
-
----
-
-## 12. MEMBER ANALYTICS (멤버용 분석)
-
-### 12.1 Speech Act 트렌드 조회
-```
-GET /api/v1/members/me/speech-trend
-Authorization: Bearer <token> (MEMBER)
-```
-
-**Query Params** (Spring Pageable)
-| 파라미터 | 필수 | 기본값 | 설명 |
-|---------|------|--------|------|
-| page | X | 0 | 페이지 번호 |
-| size | X | 20 | 페이지 크기 |
-| sort | X | createdAt,desc | 정렬 기준 |
-
-**Response** `200`
-```json
-{
-  "success": true,
-  "code": "SUCCESS",
-  "message": "요청이 성공적으로 처리되었습니다.",
-  "data": {
-    "content": [
-      {
-        "meetingId": 10,
-        "scheduledAt": "2026-05-08T14:00:00",
-        "vulnerabilityCount": 1,
-        "dissentCount": 1,
-        "initiativeCount": 0
-      },
-      {
-        "meetingId": 9,
-        "scheduledAt": "2026-04-24T14:00:00",
-        "vulnerabilityCount": 3,
-        "dissentCount": 2,
-        "initiativeCount": 2
-      }
-    ],
-    "totalElements": 12,
-    "totalPages": 1,
-    "size": 20,
-    "number": 0
-  }
-}
-```
-
-> 멤버 본인의 미팅별 Speech Act 발화 횟수 시계열. Career Memory 화면의 행동 변화 그래프에 활용.
-
----
-
-### 12.2 멤버 포트폴리오 조회
-```
-GET /api/v1/members/me/portfolio
-Authorization: Bearer <token> (MEMBER)
-```
-
-**Response** `200`
-```json
-{
-  "success": true,
-  "code": "SUCCESS",
-  "message": "요청이 성공적으로 처리되었습니다.",
-  "data": {
-    "meetingHistory": [
-      {
-        "meetingId": 10,
-        "scheduledAt": "2026-05-08T14:00:00",
-        "title": "1on1 #12 — 이준혁 팀장"
-      }
-    ],
-    "scoreTrend": [
-      {
-        "meetingId": 10,
-        "scheduledAt": "2026-05-08T14:00:00",
-        "safetyScore": 31.0
-      },
-      {
-        "meetingId": 9,
-        "scheduledAt": "2026-04-24T14:00:00",
-        "safetyScore": 72.0
-      }
-    ],
-    "topCareerTags": ["MSA 전환", "팀 DX 리드", "결제 시스템"],
-    "feedbackSummaries": [
-      "QA 리소스 이슈를 명확하게 제기했습니다.",
-      "Initiative 0회 — 베이스라인 대비 100% 하락"
-    ]
-  }
-}
-```
-
-> `meetingHistory`: 참여한 미팅 목록  
-> `scoreTrend`: 미팅별 Safety Score 추이 (선 그래프용)  
-> `topCareerTags`: AI가 추출한 커리어 태그 상위 목록  
-> `feedbackSummaries`: 최근 피드백 제목 요약 목록
 
 ---
 
@@ -1582,6 +1594,45 @@ export function useMeetingStatus(meetingId: number, enabled: boolean) {
 
 > 이 섹션은 BE 구현 및 FE 시각화의 기준 문서입니다. 모든 점수 산출은 이 공식에 따릅니다.
 
+### A.0 AI 분석 파이프라인
+
+**파이프라인 구성 (v2.6 기준)**
+
+```
+Whisper STT
+  → GPT-mini (Step 2) — Speech Act 분류 + 주제/블로커/약속 추출 + 발화 비율
+  → GPT-mini (Step 3) — 3-Gap 스코어링 + 코칭 피드백 + Career 태그
+```
+
+**Step 2 프롬프트 설계 원칙**
+
+| 항목 | 내용 |
+|------|------|
+| 이론 근거 | Searle(1969) Speech Act Theory, Edmondson(1999) Psychological Safety |
+| 추론 방식 | CoT (Chain-of-Thought): Step A 화자 판별 → B 멤버 필터링 → C 의도 판단 → D 발화 비율 → E 기타 추출 |
+| 분류 원칙 | precision > recall (애매하면 포함하지 않음), 원문 그대로 인용 |
+| Few-shot | 포함 예시 3개 + 제외 예시 2개 (사교적 겸손, 단순 수락 경계 사례) |
+| 발화 비율 | 문자수 기준 정수 산출, leaderRatio + memberRatio = 100 보장 |
+
+**Step 3 프롬프트 — Meeting RAG (이전 미팅 컨텍스트 주입)**
+
+분석 시 최근 3회 미팅의 Rolling Baseline을 step3 프롬프트에 자동 주입:
+```
+[이전 미팅 컨텍스트 — Rolling Baseline]
+최근 N회 미팅 평균:
+- Safety Score 평균: X.X
+- Vulnerability 평균: X.X회
+- Constructive Dissent 평균: X.X회
+- Initiative 평균: X.X회
+- 이전 블로커: 키워드1, 키워드2
+```
+
+→ 피드백에 변화량 자동 포함: "Vulnerability 발화가 이전 3회 평균 2.3건에서 0건으로 감소했습니다"
+
+> 첫 미팅이거나 이전 분석 데이터가 없는 경우 컨텍스트 주입 없이 절대값 기반 분석.
+
+---
+
 ### A.1 Safety Score (Y축) — Speech Act 기반
 
 ```
@@ -1688,3 +1739,6 @@ trend = 전월 대비 +5 이상 → IMPROVING / ±5 이내 → STABLE / -5 이�
 | 2026-05-12 | v2.1 | Scoring 공식 확정 (Safety Score 변환표, Survey Score 산출, Honesty Gap 방향성 기반 전환, 사분면 정의), APPENDIX 추가 |
 | 2026-05-15 | v2.2 | 블로커 보드 → 블로커 피라미드 명칭 변경 (blocker-board → blocker-pyramid), 5/15 회의 결정사항 반영 |
 | 2026-05-28 | v2.3 | 실코드 기준 동기화 — URL 불일치 수정 (health-score→dashboard, analysis/{id}/status→meetings/{id}/status), quadrant 응답 구조 변경 (honestyGap/direction/riskLevel 추가), 신규 API 추가 (6.3 surveys/history, 9.4 promises/fulfillment-rate, 12. Member Analytics) |
+| 2026-05-29 | v2.4 | 12절(MEMBER ANALYTICS) 제거 — speech-trend/portfolio/career-memory는 MVP 범위 외 또는 11절로 커버. PRD 멤버 화면 기준 정렬 |
+| 2026-06-02 | v2.5 | 8절 Pre-Meeting Briefing 추가 (GET /meetings/{id}/pre-briefing) — 브리핑 카드: survey, lastMeeting 요약, pendingPromises, recommendedTopics. 기존 8~11절 번호 순서 변경 |
+| 2026-06-03 | v2.6 | 4.4절 팀 발화 비율 랭킹 추가 (GET /teams/{id}/talk-ratio-ranking). GPT 발화 비율 항상 40 고정 버그 수정. A.0절 AI 파이프라인 문서화 (CoT + Few-shot + Meeting RAG) |
