@@ -1,0 +1,84 @@
+import type React from 'react';
+import Card from '@/components/ui/Card';
+import type { TeamHealthScoreData, TeamHealthTrend } from '@/types/teamHealth';
+
+export interface TeamHealthScoreCardProps {
+  data: TeamHealthScoreData;
+  coachingSlot?: React.ReactNode;
+}
+
+const trendMessageStyles: Record<TeamHealthTrend, string> = {
+  IMPROVING: 'text-emerald-600',
+  STABLE: 'text-gray-500',
+  DECLINING: 'text-red-500',
+};
+
+const trendLabels: Record<TeamHealthTrend, string> = {
+  IMPROVING: '개선',
+  STABLE: '안정',
+  DECLINING: '감소',
+};
+
+const TEAM_HEALTH_BAR_COLOR = '#2dd4bf';
+
+export default function TeamHealthScoreCard({ data, coachingSlot }: TeamHealthScoreCardProps) {
+  const score = Math.round(data.teamHealthScore);
+  const delta = data.trendDelta;
+  const hasDelta = typeof delta === 'number';
+  const deltaStyle =
+    !hasDelta || delta === 0
+      ? 'bg-gray-100 text-gray-500'
+      : delta > 0
+        ? 'bg-emerald-50 text-emerald-600'
+        : 'bg-red-50 text-red-500';
+  const deltaText = !hasDelta
+    ? ''
+    : delta > 0
+      ? `▲${delta}`
+      : delta < 0
+        ? `▼${Math.abs(delta)}`
+        : '≈';
+
+  return (
+    <Card className="mb-5 p-5">
+      <div className="flex flex-col gap-5">
+        <div className="min-w-0">
+          <p className="text-base font-semibold text-gray-700">Team Health Score</p>
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <span className="text-5xl font-bold leading-none text-gray-950">
+              {score}
+            </span>
+            <span className="pb-1 text-base font-medium text-gray-400">/100</span>
+            {hasDelta && (
+              <span className={`mb-1 rounded-full px-2 py-0.5 text-xs font-semibold ${deltaStyle}`}>
+                {deltaText} <span className="font-normal">최근 3개월 평균 대비</span>
+              </span>
+            )}
+          </div>
+          <div className="mt-3 h-1.5 w-full max-w-[33%] min-w-[180px] overflow-hidden rounded-full bg-gray-100">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${Math.min(100, Math.max(0, score))}%`,
+                backgroundColor: TEAM_HEALTH_BAR_COLOR,
+              }}
+            />
+          </div>
+          {data.statusNote ? (
+            <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">{data.statusNote}</p>
+          ) : (
+            <p className={`mt-3 text-sm font-semibold ${trendMessageStyles[data.trend]}`}>
+              현재 추세는 {trendLabels[data.trend]} 상태입니다.
+            </p>
+          )}
+        </div>
+
+        {coachingSlot && (
+          <div className="border-t border-gray-100 pt-4">
+            {coachingSlot}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}

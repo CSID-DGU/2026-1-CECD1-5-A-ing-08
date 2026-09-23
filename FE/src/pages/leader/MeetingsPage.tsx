@@ -1,0 +1,445 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import PageLayout from "@/components/layout/PageLayout";
+import { useMeetingStore } from "@/stores/meetingStore";
+import { useMeetings } from "@/features/meeting/useMeetings";
+import { cancelMeeting } from "@/api/meetings";
+import { useTeamActionItems } from "@/features/leader/useTeamActionItems";
+import { useTeamMembers } from "@/features/team/useTeamMembers";
+import { useAuthStore } from "@/stores/authStore";
+import { replaceTermsInText } from "@/constants/feedbackTermMap";
+import { ROUTES } from "@/constants/routes";
+
+interface MeetingsPageProps {
+  showCreateButton?: boolean;
+  getMeetingPath?: (meetingId: string) => string;
+  // 팀 단위 우측 패널(1on1 멤버 · 액션 아이템) 노출 여부 — 멤버 화면에선 숨김
+  showTeamPanels?: boolean;
+}
+
+const statusMap: Record<string, { label: string; badge: string }> = {
+  CREATED:   { label: "대기 중",  badge: "bg-yellow-100 text-yellow-700" },
+  PENDING:   { label: "대기 중",  badge: "bg-yellow-100 text-yellow-700" },
+  RECORDING: { label: "녹음 중",  badge: "bg-blue-100 text-blue-700" },
+  ANALYZING: { label: "분석 중",  badge: "bg-purple-100 text-purple-700" },
+  COMPLETED: { label: "완료",     badge: "bg-emerald-100 text-emerald-700" },
+};
+
+function getStatus(status: string) {
+  return statusMap[status] ?? { label: status, badge: "bg-gray-100 text-gray-600" };
+}
+
+function formatScheduledAt(scheduledAt: string | null | undefined) {
+  if (!scheduledAt) return '일정 미정';
+  return scheduledAt.slice(0, 16).replace("T", " ");
+}
+
+export default function MeetingsPage({
+  showCreateButton = true,
+  getMeetingPath = ROUTES.LEADER_MEETING,
+  showTeamPanels = true,
+}: MeetingsPageProps) {
+  const { meetings, isLoading, error, refetch } = useMeetings();
+  const teamId = useAuthStore((s) => s.user?.teamId);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+
+  const handleCancelMeeting = async (meetingId: number, partnerName: string) => {
+    if (!window.confirm(`${partnerName}님과의 미팅을 취소할까요?\n취소하면 이후 회차 번호가 자동으로 조정됩니다.`)) return;
+    setCancellingId(meetingId);
+    try {
+      await cancelMeeting(meetingId);
+      await refetch();
+    } catch {
+      window.alert('미팅을 취소하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setCancellingId(null);
+    }
+  };
+  const {
+    data: actionItems,
+    loading: actionItemsLoading,
+    error: actionItemsError,
+  } = useTeamActionItems(showTeamPanels ? teamId : undefined);
+  const setCreateModalOpen = useMeetingStore((s) => s.setCreateModalOpen);
+  const navigate = useNavigate();
+
+  const sortedMeetings = useMemo(
+    () => [...meetings].sort((a, b) => {
+      const aDate = a.scheduledAt ?? '';
+      const bDate = b.scheduledAt ?? '';
+      return bDate.localeCompare(aDate);
+    }),
+    [meetings]
+  );
+
+  const [showAllFuture, setShowAllFuture] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [filterMember, setFilterMember] = useState('');
+  const [filterMonth, setFilterMonth] = useState('');
+  const [expandedActionMembers, setExpandedActionMembers] = useState<Set<number>>(new Set());
+  const toggleActionMember = (memberId: number) =>
+    setExpandedActionMembers((prev) => {
+      const next = new Set(prev);
+      if (next.has(memberId)) next.delete(memberId);
+      else next.add(memberId);
+      return next;
+    });
+
+  const now = new Date();
+  const isWithinGrace = (scheduledAt: string | null | undefined) => {
+    if (!scheduledAt) return false;
+    const d = new Date(scheduledAt);
+    d.setMinutes(d.getMinutes() + 30);
+    return d > now;
+  };
+
+  const futureMeetings = sortedMeetings
+    .filter((m) => isWithinGrace(m.scheduledAt) && m.status !== 'COMPLETED')
+    .sort((a, b) => (a.scheduledAt ?? '').localeCompare(b.scheduledAt ?? ''));
+  const visibleFutureMeetings = showAllFuture ? futureMeetings : futureMeetings.slice(0, 3);
+  const historyMeetings = sortedMeetings.filter(
+    (m) => !isWithinGrace(m.scheduledAt) || m.status === 'COMPLETED'
+  );
+
+  const uniquePartners = useMemo(
+    () => [...new Set(historyMeetings.map((m) => m.partnerName).filter(Boolean))].sort(),
+    [historyMeetings]
+  );
+
+  const filteredHistory = useMemo(() => {
+    return historyMeetings.filter((m) => {
+      if (filterMember && m.partnerName !== filterMember) return false;
+      if (filterMonth && m.scheduledAt && !m.scheduledAt.startsWith(filterMonth)) return false;
+      return true;
+    });
+  }, [historyMeetings, filterMember, filterMonth]);
+
+  const HISTORY_PAGE_SIZE = 10;
+  const totalHistoryPages = Math.max(1, Math.ceil(filteredHistory.length / HISTORY_PAGE_SIZE));
+  const paginatedHistory = filteredHistory.slice(
+    (historyPage - 1) * HISTORY_PAGE_SIZE,
+    historyPage * HISTORY_PAGE_SIZE
+  );
+
+  useEffect(() => { setHistoryPage(1); }, [filterMember, filterMonth]);
+
+  const { members: teamMembers, fetch: fetchTeamMembers } = useTeamMembers(teamId ?? '');
+  useEffect(() => {
+    if (teamId && showTeamPanels) fetchTeamMembers();
+  }, [teamId, showTeamPanels, fetchTeamMembers]);
+  const memberList = useMemo(
+    () => teamMembers.filter((m) => m.role === 'member'),
+    [teamMembers]
+  );
+
+  return (
+    <PageLayout>
+      <div className="p-8 max-w-[1400px] mx-auto">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-8">
+          <div>
+            <h1 className="text-xl font-bold">1on1 미팅</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              전체 1on1 미팅 현황을 한눈에 보고, 개별 미팅으로 바로 이동할 수 있어요.
+            </p>
+          </div>
+          <button
+            onClick={() => setCreateModalOpen(true)}
+            className={`${showCreateButton ? 'inline-flex' : 'hidden'} items-center justify-center rounded-lg bg-[#5F74FA] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#4E62E6]`}
+          >
+            새 1on1 만들기
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className={`grid gap-6 ${showTeamPanels ? 'xl:grid-cols-[1.6fr_0.9fr]' : ''}`}>
+          <div className="space-y-6">
+            <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">예정된 미팅</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-gray-900">다음 1on1 일정</h2>
+                </div>
+                <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">
+                  총 {futureMeetings.length}건
+                </span>
+              </div>
+
+              {isLoading ? (
+                <div className="mt-6 rounded-3xl border border-gray-200 bg-gray-50 p-8 text-center text-gray-400 animate-pulse">
+                  불러오는 중...
+                </div>
+              ) : futureMeetings.length === 0 ? (
+                <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
+                  예정된 미팅이 없습니다.
+                </div>
+              ) : (
+                <div className="mt-6 space-y-3">
+                  {visibleFutureMeetings.map((meeting) => (
+                    <div key={meeting.meetingId} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => navigate(getMeetingPath(String(meeting.meetingId)))}
+                        className="w-full rounded-3xl border border-blue-100 bg-blue-50 p-6 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-100"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                          <div>
+                            <p className="text-sm text-gray-500">{formatScheduledAt(meeting.scheduledAt)}</p>
+                            <h3 className="mt-2 text-xl font-semibold text-gray-900">
+                              {meeting.partnerName}님과의 1on1
+                            </h3>
+                            <p className="mt-3 text-sm text-gray-600">{meeting.round}회차</p>
+                          </div>
+                          <span className={`rounded-full px-3 py-1 text-sm font-semibold ${getStatus(meeting.status).badge}`}>
+                            {getStatus(meeting.status).label}
+                          </span>
+                        </div>
+                      </button>
+                      {showCreateButton && meeting.status === 'CREATED' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCancelMeeting(meeting.meetingId, meeting.partnerName)}
+                          disabled={cancellingId === meeting.meetingId}
+                          className="absolute right-4 top-4 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-500 transition hover:border-red-200 hover:text-red-500 disabled:opacity-50"
+                        >
+                          {cancellingId === meeting.meetingId ? '취소 중...' : '미팅 취소'}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {futureMeetings.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllFuture((prev) => !prev)}
+                      className="w-full rounded-3xl border border-gray-200 bg-gray-50 py-3 text-sm font-medium text-gray-500 transition hover:bg-gray-100"
+                    >
+                      {showAllFuture ? '접기 ▲' : `${futureMeetings.length - 3}개 더 보기 ▼`}
+                    </button>
+                  )}
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">내 미팅 기록</h3>
+                  <p className="text-sm text-gray-500">최근 1on1 이력을 확인할 수 있어요.</p>
+                </div>
+                <span className="text-sm text-gray-500">
+                  {filteredHistory.length !== historyMeetings.length
+                    ? `${filteredHistory.length} / ${historyMeetings.length}건`
+                    : `총 ${historyMeetings.length}건`}
+                </span>
+              </div>
+
+              <div className="mb-5 flex flex-wrap gap-2">
+                <select
+                  value={filterMember}
+                  onChange={(e) => setFilterMember(e.target.value)}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                >
+                  <option value="">멤버 전체</option>
+                  {uniquePartners.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <input
+                  type="month"
+                  value={filterMonth}
+                  onChange={(e) => setFilterMonth(e.target.value)}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                />
+                {(filterMember || filterMonth) && (
+                  <button
+                    type="button"
+                    onClick={() => { setFilterMember(''); setFilterMonth(''); }}
+                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-400 hover:text-gray-600"
+                  >
+                    초기화
+                  </button>
+                )}
+              </div>
+
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="rounded-3xl border border-gray-200 bg-gray-100 p-4 h-16 animate-pulse" />
+                  ))}
+                </div>
+              ) : filteredHistory.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
+                  {historyMeetings.length === 0 ? '아직 기록된 미팅이 없습니다.' : '필터 조건에 맞는 미팅이 없습니다.'}
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {paginatedHistory.map((meeting) => (
+                      <div key={meeting.meetingId} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => navigate(getMeetingPath(String(meeting.meetingId)))}
+                          className="w-full rounded-3xl border border-gray-200 bg-gray-50 p-4 text-left transition hover:border-gray-300 hover:bg-gray-100"
+                        >
+                          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div className="flex flex-wrap items-baseline gap-2">
+                              <h4 className="text-base font-semibold text-gray-900">
+                                {meeting.partnerName}님과의 1on1
+                              </h4>
+                              <span className="text-xs text-gray-400">
+                                {formatScheduledAt(meeting.scheduledAt)}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatus(meeting.status).badge}`}>
+                                {getStatus(meeting.status).label}
+                              </span>
+                              <span className="text-sm text-gray-500">{meeting.round}회차</span>
+                              {showCreateButton && meeting.status === 'CREATED' && (
+                                <span className="inline-block w-[64px]" aria-hidden />
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                        {showCreateButton && meeting.status === 'CREATED' && (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelMeeting(meeting.meetingId, meeting.partnerName)}
+                            disabled={cancellingId === meeting.meetingId}
+                            className="absolute bottom-4 right-4 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-500 transition hover:border-red-200 hover:text-red-500 disabled:opacity-50"
+                          >
+                            {cancellingId === meeting.meetingId ? '취소 중...' : '미팅 취소'}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {totalHistoryPages > 1 && (
+                    <div className="mt-4 flex items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                        disabled={historyPage === 1}
+                        className="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        ◀ 이전
+                      </button>
+                      <span className="text-sm text-gray-500">
+                        {historyPage} / {totalHistoryPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setHistoryPage((p) => Math.min(totalHistoryPages, p + 1))}
+                        disabled={historyPage === totalHistoryPages}
+                        className="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        다음 ▶
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
+          </div>
+
+          {showTeamPanels && (
+          <aside className="space-y-6">
+            <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">1on1 멤버</h3>
+                  <p className="text-sm text-gray-500">이번 달에 만나야 할 멤버를 확인해보세요.</p>
+                </div>
+              </div>
+
+              {memberList.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                  아직 추가된 멤버가 없습니다.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {memberList.map((member) => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => navigate(ROUTES.LEADER_MEMBER(member.id))}
+                      className="flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 p-4 text-left transition hover:border-gray-300 hover:bg-gray-100"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{member.name}</p>
+                        {member.jobTitle && (
+                          <p className="mt-0.5 text-xs text-gray-400">{member.jobTitle}</p>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-400">자세히 보기 ›</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">액션 아이템</h3>
+                <p className="text-sm text-gray-500">멤버별로 이번 1on1에서 정한 다음 액션이에요.</p>
+              </div>
+
+              {actionItemsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="rounded-3xl border border-gray-200 bg-gray-100 p-4 h-16 animate-pulse" />
+                  ))}
+                </div>
+              ) : actionItemsError ? (
+                <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                  {actionItemsError}
+                </div>
+              ) : actionItems.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                  아직 정해진 액션이 없습니다.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {actionItems.map((member) => {
+                    const isOpen = expandedActionMembers.has(member.memberId);
+                    return (
+                      <div key={member.memberId} className="rounded-3xl border border-gray-200 bg-gray-50 overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => toggleActionMember(member.memberId)}
+                          className="flex w-full items-center justify-between gap-2 p-4 text-left transition hover:bg-gray-100"
+                        >
+                          <p className="text-sm font-semibold text-gray-900">
+                            {member.memberName}
+                            <span className="ml-1 text-xs font-normal text-gray-400">{member.round}회차</span>
+                            <span className="ml-2 text-xs font-normal text-gray-400">액션 {member.plans.length}개</span>
+                          </p>
+                          <span className="flex-shrink-0 text-xs text-gray-400">{isOpen ? '▲' : '▼'}</span>
+                        </button>
+                        {isOpen && (
+                          <ul className="space-y-1.5 px-4 pb-4">
+                            {member.plans.map((plan) => (
+                              <li key={plan.planId} className="flex gap-2 text-sm text-gray-600">
+                                <span className="text-gray-300">•</span>
+                                <span className="leading-snug">{replaceTermsInText(plan.content)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </aside>
+          )}
+        </div>
+      </div>
+    </PageLayout>
+  );
+}
