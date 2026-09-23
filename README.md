@@ -104,19 +104,4 @@ ReadB — 1on1 미팅 Honesty Gap AI 분석 서비스
 | `test` | 테스트 코드 추가/수정 |
 | `style` | 코드 포맷팅, 세미콜론 누락 등 |
 
-## 💡 PR Convention
-
-| 아이콘 | 코드 | 설명 |
-| ------ | ---- | ---- |
-| ✨ | :sparkles: | 새 기능 |
-| 🐛 | :bug: | 버그 수정 |
-| ♻️ | :recycle: | 리팩토링 |
-| 🔥 | :fire: | 코드/파일 삭제 |
-| 📝 | :memo: | 문서 수정 |
-| 🚑 | :ambulance: | 긴급 수정 |
-| 💄 | :lipstick: | UI/스타일 수정 |
-| ⚡️ | :zap: | 성능 개선 |
-| 🔀 | :twisted_rightwards_arrows: | 브랜치 합병 |
-| 💡 | :bulb: | 주석 추가/수정 |
-
 ---
