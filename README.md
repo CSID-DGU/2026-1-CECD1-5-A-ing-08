@@ -1,7 +1,3 @@
-<div><img src="https://capsule-render.vercel.app/api?type=waving&color=0:1B2A4A,100:4A90D9&height=200&section=header&text=ReadB&fontSize=90&fontColor=ffffff" /></div>
-
-[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FCSID-DGU%2F2026-1-CECD1-5-A-ing-08&count_bg=%234A90D9&title_bg=%231B2A4A&icon=react.svg&icon_color=%23FFFFFF&title=ReadB&edge_flat=false)](https://hits.seeyoufarm.com)
-
 # 2026-1-CECD1-5-A-ing-08
 
 2026년 1학기, 종합설계1, A-ing팀
@@ -124,5 +120,3 @@ ReadB — 1on1 미팅 Honesty Gap AI 분석 서비스
 | 💡 | :bulb: | 주석 추가/수정 |
 
 ---
-
-<div><img src="https://capsule-render.vercel.app/api?type=waving&color=0:4A90D9,100:1B2A4A&height=100&section=footer" /></div>
