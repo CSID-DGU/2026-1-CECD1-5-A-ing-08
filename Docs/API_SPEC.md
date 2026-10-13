@@ -498,7 +498,9 @@ Authorization: Bearer <token> (LEADER)
       "safetyScore": 31.0,
       "honestyGap": 56.0,
       "direction": "OVERREPORT",
-      "riskLevel": "DANGER"
+      "riskLevel": "DANGER",
+      "xValue": 87.0,
+      "xMode": "raw"
     },
     {
       "memberId": 3,
@@ -507,14 +509,24 @@ Authorization: Bearer <token> (LEADER)
       "safetyScore": 82.0,
       "honestyGap": -2.0,
       "direction": "UNDERREPORT",
-      "riskLevel": "SAFE"
+      "riskLevel": "SAFE",
+      "xValue": -6.5,
+      "xMode": "centered"
     }
   ]
 }
 ```
 
 > 응답은 `List<RadarDataPoint>` (배열). quadrant 문자열 대신 `direction` + `riskLevel`로 분리.  
-> FE에서 사분면 판별: `surveyScore ≥ 45 && safetyScore ≥ 45` → STABLE 등 (PRD 3.3 참조).
+> FE에서 사분면 판별: `X ≥ 45 && safetyScore ≥ 45` → STABLE 등 (PRD 3.3 참조).
+
+> **레이더 X축 (`xValue`, `xMode`)** — 산출식은 A.2 참조
+> | xMode | 조건 | xValue | FE 표시 위치 |
+> |-------|------|--------|--------------|
+> | `raw` | 같은 문항 버전 누적 응답(이번 포함) < 4회 | surveyScore 원값 (0~100) | X = xValue |
+> | `centered` | 누적 응답 ≥ 4회 | 이번 surveyScore − 과거 surveyScore 평균 | X = clamp(0, 100, 45 + xValue) — 개인 평균을 분기선에 둠 |
+>
+> `honestyGap`은 xMode와 무관하게 `surveyScore − safetyScore`로 계산한다.
 
 > **사분면 기준** (X축: surveyScore, Y축: safetyScore, **임계값 45**)
 > | 사분면 | 조건 | 색상 | 의미 |
@@ -2128,6 +2140,15 @@ surveyScore = round(((mean − 1) / 4)^1.3 × 100)               // 0~100, γ=1.
 
 **v1 (구 문항, 보존 데이터)**: V/D/I 각각 `((level − 1) / 4)^1.3`에 가중치 40/35/25를 곱해 합산.
 
+**레이더 X축 (person-mean centering)**
+```
+n = 같은 문항 버전의 누적 응답 수 (이번 포함)
+n < 4  → xMode = "raw",      xValue = surveyScore
+n ≥ 4  → xMode = "centered", xValue = surveyScore − avg(과거 surveyScore)
+```
+- 전환 기준 4는 `AnalysisService.CENTERING_MIN_RESPONSES`
+- 개인 평균에 v1과 v2를 섞지 않는다
+
 ---
 
 ### A.3 Honesty Gap — 방향성 기반 산출
@@ -2203,3 +2224,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-06-12 | v2.8 | 14절 신규: GET /leaders/me/growth — keyInsight, talkRatioTrend, teamSafetyTrend, monthlyMeetings, promiseStats, coachingExecution, memberCadence, highlights. 9절 약속 엔드포인트 추가: PATCH /promises/{id}/complete (9.3), GET /promises/reminders (9.7), GET /teams/{teamId}/promises/summary (9.6 — leaderPromises+memberPromises 분리 구조, partnerName 필드). Safety Score 결정론적 계산 전환 (LLM 숫자 미사용, 서버가 speech act 카운트로 직접 산출) 명시. |
 | 2026-06-15 | v2.9 | **5.4절 신규**: `DELETE /meetings/{id}` 미팅 취소 (CREATED 상태만, 리더 전용, 회차 자동 재계산, MEETING_NOT_CANCELABLE 409). **5.3절**: 단일 미팅 응답에 `memberId` 추가 (미팅 진행 체크리스트 로드용). **5.2절**: 미팅 목록 역할별 스코프 명시 — 멤버는 리더와의 1on1만(셀프 미팅 제외). **6.1절**: 서베이 제출을 해당 미팅의 멤버 본인으로 제한(타인 제출 403 명시). **9.3절**: 약속 완료 권한을 1on1 참여자(리더 또는 멤버)로 확대. **9.3b절 신규**: `PATCH /promises/{id}/incomplete` 완료 해제(체크박스 off). 에러 코드 목록에 MEETING_NOT_CANCELABLE, PROMISE_NOT_FOUND 추가. |
 | 2026-10-14 | v3.0 | **사전 설문 v2 문항 교체**: 6.1 요청을 `scores: {q1,q2,q3}` + `topic`으로 변경 (실코드 기준, 기존 energyLevel/issues 형식 삭제), Q1·Q2 역문항, 첫 미팅 `{period}` 분기, DB에 raw+version 저장. 6.2/6.3 응답 실코드 기준 동기화. A.2 surveyScore 산출식 v2 반영. |
+| 2026-10-14 | v3.1 | 4.3 레이더 응답에 `xValue`/`xMode` 추가 — 누적 응답 4회 이상이면 개인 평균 대비 편차(centered)로 X축 표시. A.2에 person-mean centering 산출식 추가. |
