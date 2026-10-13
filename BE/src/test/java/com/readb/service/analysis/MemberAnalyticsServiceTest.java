@@ -16,6 +16,8 @@ import com.readb.repository.UserRepository;
 import com.readb.repository.CareerEventRepository;
 import com.readb.repository.TeamRepository;
 import com.readb.repository.ActionPlanRepository;
+import com.readb.repository.TeamCoachingCacheRepository;
+import com.readb.repository.TeamBlockerCacheRepository;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,6 +64,9 @@ class MemberAnalyticsServiceTest {
                 mock(CareerEventRepository.class),
                 mock(TeamRepository.class),
                 mock(ActionPlanRepository.class),
+                mock(TeamCoachingCacheRepository.class),
+                mock(TeamBlockerCacheRepository.class),
+                mock(GeneratedGuideService.class),
                 mock(LlmAdapter.class),
                 mock(LlmAdapter.class),
                 new ObjectMapper(),

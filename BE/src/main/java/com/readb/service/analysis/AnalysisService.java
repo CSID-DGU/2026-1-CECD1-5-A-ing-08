@@ -5,6 +5,7 @@ import com.readb.adapter.llm.LlmAdapter;
 import com.readb.common.exception.BusinessException;
 import com.readb.common.exception.ErrorCode;
 import com.readb.domain.analysis.Analysis;
+import com.readb.domain.analysis.PreBriefingType;
 import com.readb.domain.meeting.Meeting;
 import com.readb.domain.promise.Promise;
 import com.readb.domain.promise.PromiseStatus;
@@ -309,6 +310,7 @@ public class AnalysisService {
     private final ActionPlanRepository actionPlanRepository;
     private final TeamCoachingCacheRepository teamCoachingCacheRepository;
     private final TeamBlockerCacheRepository teamBlockerCacheRepository;
+    private final GeneratedGuideService generatedGuideService;
     private final LlmAdapter gptAdapter;
     private final LlmAdapter claudeAdapter;
     private final ObjectMapper objectMapper;
@@ -326,6 +328,7 @@ public class AnalysisService {
             ActionPlanRepository actionPlanRepository,
             TeamCoachingCacheRepository teamCoachingCacheRepository,
             TeamBlockerCacheRepository teamBlockerCacheRepository,
+            GeneratedGuideService generatedGuideService,
             @Qualifier("gptMiniAdapter") LlmAdapter gptAdapter,
             @Qualifier("claudeAdapter") LlmAdapter claudeAdapter,
             ObjectMapper objectMapper,
@@ -341,6 +344,7 @@ public class AnalysisService {
         this.actionPlanRepository = actionPlanRepository;
         this.teamCoachingCacheRepository = teamCoachingCacheRepository;
         this.teamBlockerCacheRepository = teamBlockerCacheRepository;
+        this.generatedGuideService = generatedGuideService;
         this.gptAdapter = gptAdapter;
         this.claudeAdapter = claudeAdapter;
         this.objectMapper = objectMapper;
@@ -401,6 +405,7 @@ public class AnalysisService {
                                   Integer durationSec) {
         analysisRepository.findByMeetingId(meetingId).ifPresent(analysisRepository::delete);
         analysisRepository.save(buildAnalysis(meetingId, step2, step3, durationSec));
+        generatedGuideService.deletePost(meetingId);
 
         promiseRepository.deleteByMeetingId(meetingId);
         savePromises(meetingId, meeting, step2);
@@ -693,7 +698,6 @@ public class AnalysisService {
 
     // ── 조회 ──────────────────────────────────────────────────────────────────
 
-    @Transactional(readOnly = true)
     public AnalysisResultResponse getResult(Long meetingId) {
         Analysis a = analysisRepository.findByMeetingId(meetingId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ANALYSIS_NOT_FOUND));
@@ -740,7 +744,9 @@ public class AnalysisService {
         String flightRiskLabel = computeFlightRiskLabel(a.getSafetyScore(), dir, risk);
 
         // 미팅 코칭 가이드 (GPT)
-        MeetingCoaching meetingCoaching = buildMeetingCoaching(a, gaps, talkRatio, promises, meeting, meetingId);
+        MeetingCoaching meetingCoaching = generatedGuideService.getOrGeneratePost(
+                meetingId, MeetingCoaching.class,
+                () -> buildMeetingCoaching(a, gaps, talkRatio, promises, meeting, meetingId));
 
         return new AnalysisResultResponse(meetingId, round, member.getName(), member.getJobTitle(),
                 meetingDate, durationSec, gaps, a.getSafetyScore(), flightRiskLabel, speechActs,
@@ -849,7 +855,6 @@ public class AnalysisService {
 
     // ── Pre-Meeting Briefing ──────────────────────────────────────────────────
 
-    @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public PreBriefingResponse getPreBriefing(Long meetingId) {
         Meeting meeting = meetingRepository.findById(meetingId)
@@ -940,8 +945,12 @@ public class AnalysisService {
         List<String> recommendedTopics = buildRecommendedTopics(pendingPromises, lastMeeting, survey);
 
         // 코칭 가이드 (GPT 생성)
-        PreBriefingResponse.CoachingGuide coachingGuide = buildCoachingGuide(
-                member.getName(), lastMeeting, pendingPromises, survey, prevMeetings, meeting.getMemberId());
+        PreBriefingResponse.LastMeetingSummary guideLastMeeting = lastMeeting;
+        List<PreBriefingResponse.PendingPromise> guidePromises = pendingPromises;
+        PreBriefingResponse.CoachingGuide coachingGuide = generatedGuideService.getOrGeneratePre(
+                meetingId, PreBriefingType.BASE, PreBriefingResponse.CoachingGuide.class,
+                () -> buildCoachingGuide(member.getName(), guideLastMeeting, guidePromises, survey,
+                        prevMeetings, meeting.getMemberId()));
 
         String scheduledAt = meeting.getScheduledAt() != null ? meeting.getScheduledAt().toString() : null;
         return new PreBriefingResponse(meetingId, round, member.getName(), member.getJobTitle(),
