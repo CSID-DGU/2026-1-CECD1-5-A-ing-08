@@ -4,6 +4,7 @@ import com.readb.common.exception.BusinessException;
 import com.readb.common.exception.ErrorCode;
 import com.readb.domain.meeting.Meeting;
 import com.readb.domain.survey.Survey;
+import com.readb.domain.survey.SurveyItems;
 import com.readb.dto.survey.SurveyHistoryResponse;
 import com.readb.dto.survey.SurveyRequest;
 import com.readb.dto.survey.SurveyResponse;
@@ -14,6 +15,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -36,10 +40,24 @@ public class SurveyService {
         Survey survey = Survey.builder()
                 .meetingId(request.meetingId())
                 .memberId(memberId)
-                .scores(request.scores())
+                .scores(encodeScores(request.scores()))
                 .topic(request.topic() != null && !request.topic().isBlank() ? request.topic().strip() : null)
                 .build();
         surveyRepository.save(survey);
+    }
+
+    // raw 응답과 문항 버전만 저장 { version: "v2", q1, q2, q3 } — 역문항 변환·합산은 읽을 때 SurveyItems로 계산
+    static Map<String, Object> encodeScores(Map<String, Object> answers) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("version", SurveyItems.VERSION);
+        for (SurveyItems.Item item : SurveyItems.ITEMS) {
+            if (!(answers.get(item.id()) instanceof Integer value)
+                    || value < SurveyItems.MIN_SCALE || value > SurveyItems.MAX_SCALE) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT);
+            }
+            result.put(item.id(), value);
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)

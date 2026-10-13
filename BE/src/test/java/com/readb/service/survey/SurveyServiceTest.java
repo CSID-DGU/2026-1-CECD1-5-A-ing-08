@@ -1,5 +1,6 @@
 package com.readb.service.survey;
 
+import com.readb.common.exception.BusinessException;
 import com.readb.domain.meeting.Meeting;
 import com.readb.domain.survey.Survey;
 import com.readb.dto.survey.SurveyHistoryResponse;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -90,11 +92,28 @@ class SurveyServiceTest {
         when(meetingRepository.findById(1L)).thenReturn(Optional.of(Meeting.builder().id(1L).memberId(7L).build()));
         ArgumentCaptor<Survey> captor = ArgumentCaptor.forClass(Survey.class);
 
-        surveyService.submitSurvey(7L, new SurveyRequest(1L, Map.of("vulnerabilityLevel", 3), "  업무량 조정  "));
-        surveyService.submitSurvey(7L, new SurveyRequest(1L, Map.of("vulnerabilityLevel", 3), "   "));
+        surveyService.submitSurvey(7L, new SurveyRequest(1L, ANSWERS, "  업무량 조정  "));
+        surveyService.submitSurvey(7L, new SurveyRequest(1L, ANSWERS, "   "));
 
         verify(surveyRepository, org.mockito.Mockito.times(2)).save(captor.capture());
         assertThat(captor.getAllValues().get(0).getTopic()).isEqualTo("업무량 조정");
         assertThat(captor.getAllValues().get(1).getTopic()).isNull();
+    }
+
+    private static final Map<String, Object> ANSWERS = Map.of("q1", 3, "q2", 3, "q3", 3);
+
+    @Test
+    void encodeScoresStoresRawAnswersWithVersion() {
+        Map<String, Object> encoded = SurveyService.encodeScores(Map.of("q1", 1, "q2", 4, "q3", 5));
+
+        assertThat(encoded).isEqualTo(Map.of("version", "v2", "q1", 1, "q2", 4, "q3", 5));
+    }
+
+    @Test
+    void encodeScoresRejectsMissingOrOutOfRangeAnswers() {
+        assertThatThrownBy(() -> SurveyService.encodeScores(Map.of("q1", 3, "q2", 3)))
+                .isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> SurveyService.encodeScores(Map.of("q1", 3, "q2", 3, "q3", 6)))
+                .isInstanceOf(BusinessException.class);
     }
 }

@@ -3,21 +3,7 @@ import { useMemo, useState } from 'react';
 import { submitSurvey } from '@/api/meetings';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
-
-const vdiQuestions = [
-  {
-    key: 'vulnerabilityLevel' as const,
-    label: 'Q1. 나는 이번 미팅에서 어려움/실수를 솔직히 말할 수 있을 것 같다',
-  },
-  {
-    key: 'dissentLevel' as const,
-    label: 'Q2. 나는 리더 의견에 동의하지 않으면 말할 수 있다',
-  },
-  {
-    key: 'initiativeLevel' as const,
-    label: 'Q3. 나는 이번 미팅에서 먼저 의견을 제안할 것이다',
-  },
-];
+import { SURVEY_QUESTIONS, renderQuestion, type SurveyQuestionId } from '@/constants/surveyQuestions';
 
 const levelOptions = [
   { value: 1, label: '전혀\n아니다' },
@@ -27,11 +13,7 @@ const levelOptions = [
   { value: 5, label: '매우\n그렇다' },
 ];
 
-type VdiScores = {
-  vulnerabilityLevel: number | null;
-  dissentLevel: number | null;
-  initiativeLevel: number | null;
-};
+type SurveyScores = Record<SurveyQuestionId, number | null>;
 
 const submitErrorMessages: Record<string, string> = {
   SURVEY_ALREADY_SUBMITTED: '이미 서베이를 제출한 미팅입니다.',
@@ -48,24 +30,17 @@ export interface SurveyFormProps {
   leaderName: string;
   scheduledAt: string;
   meetingId: number;
+  isFirstMeeting: boolean;
 }
 
-export default function SurveyForm({ leaderName, scheduledAt, meetingId }: SurveyFormProps) {
-  const [scores, setScores] = useState<VdiScores>({
-    vulnerabilityLevel: null,
-    dissentLevel: null,
-    initiativeLevel: null,
-  });
+export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirstMeeting }: SurveyFormProps) {
+  const [scores, setScores] = useState<SurveyScores>({ q1: null, q2: null, q3: null });
   const [topic, setTopic] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canSubmit =
-    meetingId > 0 &&
-    scores.vulnerabilityLevel !== null &&
-    scores.dissentLevel !== null &&
-    scores.initiativeLevel !== null;
+  const canSubmit = meetingId > 0 && SURVEY_QUESTIONS.every((q) => scores[q.id] !== null);
 
   const scheduledDate = useMemo(() => {
     if (!scheduledAt) return '일정 미정';
@@ -95,11 +70,7 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId }: Surve
     try {
       await submitSurvey({
         meetingId,
-        scores: {
-          vulnerabilityLevel: scores.vulnerabilityLevel!,
-          dissentLevel: scores.dissentLevel!,
-          initiativeLevel: scores.initiativeLevel!,
-        },
+        scores: { q1: scores.q1!, q2: scores.q2!, q3: scores.q3! },
         topic: topic.trim() || undefined,
       });
       setMessage('서베이가 제출되었습니다.');
@@ -124,18 +95,18 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId }: Surve
 
       <Card className="mt-10 w-full rounded-[20px] border-gray-200 px-9 py-9 shadow-sm">
         <div className="space-y-10">
-          {vdiQuestions.map((q) => (
-            <section key={q.key}>
-              <h2 className="text-lg font-extrabold text-gray-900">{q.label}</h2>
+          {SURVEY_QUESTIONS.map((q) => (
+            <section key={q.id}>
+              <h2 className="text-lg font-extrabold text-gray-900">{renderQuestion(q.template, isFirstMeeting)}</h2>
               <div className="mt-5 grid grid-cols-5 gap-2">
                 {levelOptions.map((opt) => {
-                  const isSelected = scores[q.key] === opt.value;
+                  const isSelected = scores[q.id] === opt.value;
                   return (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => {
-                        setScores((prev) => ({ ...prev, [q.key]: opt.value }));
+                        setScores((prev) => ({ ...prev, [q.id]: opt.value }));
                         setMessage('');
                         setError('');
                       }}

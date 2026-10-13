@@ -27,6 +27,7 @@ export default function SurveyPage() {
         leaderName={meeting.leaderName}
         scheduledAt={meeting.scheduledAt}
         meetingId={parsedMeetingId}
+        isFirstMeeting={meeting.round === 1}
       />
     );
   };

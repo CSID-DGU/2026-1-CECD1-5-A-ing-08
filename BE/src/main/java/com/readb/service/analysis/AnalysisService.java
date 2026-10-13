@@ -11,6 +11,7 @@ import com.readb.domain.promise.Promise;
 import com.readb.domain.promise.PromiseStatus;
 import com.readb.domain.recording.Recording;
 import com.readb.domain.survey.Survey;
+import com.readb.domain.survey.SurveyItems;
 import com.readb.dto.analysis.AnalysisResultResponse;
 import com.readb.dto.meeting.PreBriefingResponse;
 import com.readb.dto.analysis.AnalysisResultResponse.*;
@@ -382,7 +383,7 @@ public class AnalysisService {
     protected Double loadSurveyScore(Long meetingId, Long memberId) {
         return surveyRepository.findByMeetingIdAndMemberId(meetingId, memberId)
                 .map(Survey::getScores)
-                .map(this::computeSurveyScore)
+                .map(AnalysisService::computeSurveyScore)
                 .orElse(null);
     }
 
@@ -640,8 +641,19 @@ public class AnalysisService {
     // 가중치 V 40% / D 35% / I 25%. (모두 3점 → ~41, 모두 4점 → ~69, 모두 5점 → 100)
     private static final double SURVEY_GAMMA = 1.3;
 
-    private Double computeSurveyScore(Map<String, Object> scores) {
+    // v2: 역문항 변환 점수 평균(1~5)에 동일한 정규화·γ 곡선 적용 (모두 3점 → ~41, v1과 같은 눈금)
+    // v1(version 키 없음 또는 "v1"): 기존 V/D/I 가중 공식 유지
+    static Double computeSurveyScore(Map<String, Object> scores) {
         if (scores == null) return null;
+        if (SurveyItems.VERSION.equals(scores.get("version"))) {
+            int total = 0;
+            for (SurveyItems.Item item : SurveyItems.ITEMS) {
+                if (!(scores.get(item.id()) instanceof Number raw)) return null;
+                total += item.score(raw.intValue());
+            }
+            double mean = (double) total / SurveyItems.ITEMS.size();
+            return (double) Math.round(surveyDimension(mean) * 100.0);
+        }
         Object vObj = scores.get("vulnerabilityLevel");
         Object dObj = scores.get("dissentLevel");
         Object iObj = scores.get("initiativeLevel");
@@ -654,7 +666,7 @@ public class AnalysisService {
     }
 
     // 리커트 1~5 → 0~1 정규화 후 γ 곡선 적용 (고평가일수록 더 큰 할인)
-    private double surveyDimension(double level) {
+    private static double surveyDimension(double level) {
         double normalized = Math.max(0.0, Math.min(1.0, (level - 1.0) / 4.0));
         return Math.pow(normalized, SURVEY_GAMMA);
     }

@@ -8,14 +8,11 @@ import type {
   MemberReportData,
 } from '@/types/memberReport';
 import type { LeaderReport } from '@/types/report';
+import type { SurveyQuestionId } from '@/constants/surveyQuestions';
 
 export interface SubmitSurveyPayload {
   meetingId: number;
-  scores: {
-    vulnerabilityLevel: number;
-    dissentLevel: number;
-    initiativeLevel: number;
-  };
+  scores: Record<SurveyQuestionId, number>;
   topic?: string;
 }
 

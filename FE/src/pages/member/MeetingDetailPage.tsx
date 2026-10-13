@@ -64,6 +64,7 @@ export default function MemberMeetingDetailPage() {
             leaderName={meeting.leaderName}
             scheduledAt={meeting.scheduledAt}
             meetingId={meeting.meetingId}
+            isFirstMeeting={meeting.round === 1}
           />
         </div>
       </div>
