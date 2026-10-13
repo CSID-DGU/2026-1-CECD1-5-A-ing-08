@@ -42,9 +42,17 @@ const QUADRANT_STYLE: Record<RadarQuadrant, { fill: string; stroke: string; text
 // 분기점 45: safety 기준선이 40(발화 없음)이라, 발화가 조금이라도 있으면 상단으로 가도록 BE와 정렬.
 const QUADRANT_THRESHOLD = 45;
 
+// 레이더 X 좌표. centered(개인 평균 대비 편차)는 분기선을 개인 평균으로 두고 편차만큼 이동시켜
+// raw(0~100)와 같은 축에 함께 그린다 — 평소보다 낮게 응답하면 위험 쪽(왼쪽)으로 이동.
+export function getPlotX(point: RadarDataPoint, threshold: number = QUADRANT_THRESHOLD): number {
+  if (point.xValue == null) return point.surveyScore;
+  if (point.xMode !== 'centered') return point.xValue;
+  return Math.max(0, Math.min(100, threshold + point.xValue));
+}
+
 export function getQuadrant(point: RadarDataPoint, threshold: number = QUADRANT_THRESHOLD): RadarQuadrant {
   const sHigh = point.safetyScore >= threshold;
-  const svHigh = point.surveyScore >= threshold;
+  const svHigh = getPlotX(point, threshold) >= threshold;
   if (svHigh && sHigh) return 'STABLE';
   if (svHigh && !sHigh) return 'SILENT_RISK';
   if (!svHigh && !sHigh) return 'EXPLICIT_RISK';
@@ -87,6 +95,15 @@ function CustomTooltip({ active, payload, threshold }: CustomTooltipProps) {
             <span>Survey Score</span>
             <strong style={{ color: '#111827' }}>{point.surveyScore}%</strong>
           </div>
+          {point.xMode === 'centered' && point.xValue !== null && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+              <span>개인 평균 대비</span>
+              <strong style={{ color: '#111827' }}>
+                {point.xValue > 0 ? '+' : ''}
+                {point.xValue}
+              </strong>
+            </div>
+          )}
           <div style={{ height: 6, width: barWidth, background: '#E5E7EB', borderRadius: 4 }}>
             <div style={{ width: surveyWidth, height: '100%', background: '#5EEAD4', borderRadius: 4 }} />
           </div>
@@ -185,7 +202,7 @@ export default function ScatterRadar({
 
           <XAxis
             type="number"
-            dataKey="surveyScore"
+            dataKey="plotX"
             domain={[0, 100]}
             ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
             tick={{ fontSize: 11, fill: '#9CA3AF' }}
@@ -220,7 +237,7 @@ export default function ScatterRadar({
           <Tooltip content={<CustomTooltip threshold={threshold} />} />
 
           <Scatter
-            data={data}
+            data={data.map((point) => ({ ...point, plotX: getPlotX(point, threshold) }))}
             shape={(props: object) => (
               <CustomDot
                 {...(props as CustomDotProps)}
