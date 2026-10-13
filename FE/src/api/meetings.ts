@@ -16,6 +16,7 @@ export interface SubmitSurveyPayload {
     dissentLevel: number;
     initiativeLevel: number;
   };
+  topic?: string;
 }
 
 export interface SurveyData {

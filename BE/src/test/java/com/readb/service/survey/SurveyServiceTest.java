@@ -1,11 +1,15 @@
 package com.readb.service.survey;
 
+import com.readb.domain.meeting.Meeting;
 import com.readb.domain.survey.Survey;
 import com.readb.dto.survey.SurveyHistoryResponse;
+import com.readb.dto.survey.SurveyRequest;
+import com.readb.repository.MeetingRepository;
 import com.readb.repository.SurveyRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -17,6 +21,7 @@ import org.springframework.data.domain.Sort;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -28,11 +33,14 @@ class SurveyServiceTest {
     @Mock
     private SurveyRepository surveyRepository;
 
+    @Mock
+    private MeetingRepository meetingRepository;
+
     private SurveyService surveyService;
 
     @BeforeEach
     void setUp() {
-        surveyService = new SurveyService(surveyRepository);
+        surveyService = new SurveyService(surveyRepository, meetingRepository);
     }
 
     @Test
@@ -75,5 +83,18 @@ class SurveyServiceTest {
         Page<SurveyHistoryResponse> result = surveyService.getHistory(1L, pageable);
 
         assertThat(result.getContent().get(0).scores()).isEqualTo(scores);
+    }
+
+    @Test
+    void submitSurveySavesTrimmedTopicAndBlankAsNull() {
+        when(meetingRepository.findById(1L)).thenReturn(Optional.of(Meeting.builder().id(1L).memberId(7L).build()));
+        ArgumentCaptor<Survey> captor = ArgumentCaptor.forClass(Survey.class);
+
+        surveyService.submitSurvey(7L, new SurveyRequest(1L, Map.of("vulnerabilityLevel", 3), "  업무량 조정  "));
+        surveyService.submitSurvey(7L, new SurveyRequest(1L, Map.of("vulnerabilityLevel", 3), "   "));
+
+        verify(surveyRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        assertThat(captor.getAllValues().get(0).getTopic()).isEqualTo("업무량 조정");
+        assertThat(captor.getAllValues().get(1).getTopic()).isNull();
     }
 }

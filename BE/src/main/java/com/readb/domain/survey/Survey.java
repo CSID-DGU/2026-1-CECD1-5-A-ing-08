@@ -31,6 +31,9 @@ public class Survey {
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> scores;
 
+    @Column(length = 200)
+    private String topic;
+
     @CreationTimestamp
     @Column(name = "submitted_at", updatable = false)
     private LocalDateTime submittedAt;

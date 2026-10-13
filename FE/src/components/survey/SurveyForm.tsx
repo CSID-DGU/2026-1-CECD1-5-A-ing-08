@@ -56,6 +56,7 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId }: Surve
     dissentLevel: null,
     initiativeLevel: null,
   });
+  const [topic, setTopic] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,6 +100,7 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId }: Surve
           dissentLevel: scores.dissentLevel!,
           initiativeLevel: scores.initiativeLevel!,
         },
+        topic: topic.trim() || undefined,
       });
       setMessage('서베이가 제출되었습니다.');
     } catch (err) {
@@ -151,6 +153,22 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId }: Surve
               </div>
             </section>
           ))}
+
+          <section>
+            <label htmlFor="survey-topic" className="text-lg font-extrabold text-gray-900">
+              Q4. 이번 미팅에서 이야기하고 싶은 주제가 있나요?{' '}
+              <span className="text-sm font-bold text-slate-400">(선택)</span>
+            </label>
+            <textarea
+              id="survey-topic"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              maxLength={200}
+              rows={3}
+              placeholder="예: 다음 분기 프로젝트 역할, 업무량 조정"
+              className="mt-5 w-full resize-none rounded-[16px] border border-slate-200 px-4 py-3 text-sm text-gray-900 placeholder:text-slate-400 focus:border-violet-500 focus:outline-none"
+            />
+          </section>
 
           <div className="pt-1">
             <Button

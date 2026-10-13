@@ -37,6 +37,7 @@ public class SurveyService {
                 .meetingId(request.meetingId())
                 .memberId(memberId)
                 .scores(request.scores())
+                .topic(request.topic() != null && !request.topic().isBlank() ? request.topic().strip() : null)
                 .build();
         surveyRepository.save(survey);
     }
