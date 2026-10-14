@@ -382,7 +382,7 @@ public class AnalysisService {
     protected Double loadSurveyScore(Long meetingId, Long memberId) {
         return surveyRepository.findByMeetingIdAndMemberId(meetingId, memberId)
                 .map(Survey::getScores)
-                .map(this::computeSurveyScore)
+                .map(AnalysisService::computeSurveyScore)
                 .orElse(null);
     }
 
@@ -640,7 +640,7 @@ public class AnalysisService {
     // 가중치 V 40% / D 35% / I 25%. (모두 3점 → ~41, 모두 4점 → ~69, 모두 5점 → 100)
     private static final double SURVEY_GAMMA = 1.3;
 
-    private Double computeSurveyScore(Map<String, Object> scores) {
+    static Double computeSurveyScore(Map<String, Object> scores) {
         if (scores == null) return null;
         Object vObj = scores.get("vulnerabilityLevel");
         Object dObj = scores.get("dissentLevel");
@@ -654,7 +654,7 @@ public class AnalysisService {
     }
 
     // 리커트 1~5 → 0~1 정규화 후 γ 곡선 적용 (고평가일수록 더 큰 할인)
-    private double surveyDimension(double level) {
+    private static double surveyDimension(double level) {
         double normalized = Math.max(0.0, Math.min(1.0, (level - 1.0) / 4.0));
         return Math.pow(normalized, SURVEY_GAMMA);
     }
@@ -1369,8 +1369,8 @@ public class AnalysisService {
         List<Meeting> allMeetings = meetingRepository.findByMemberIdInOrderByCreatedAtDesc(memberIds);
         if (allMeetings.isEmpty()) return List.of();
 
-        Map<Long, Analysis> analysisByMeetingId = analysisRepository.findByMeetingIdIn(
-                        allMeetings.stream().map(Meeting::getId).toList())
+        List<Long> allMeetingIds = allMeetings.stream().map(Meeting::getId).toList();
+        Map<Long, Analysis> analysisByMeetingId = analysisRepository.findByMeetingIdIn(allMeetingIds)
                 .stream().collect(Collectors.toMap(Analysis::getMeetingId, a -> a));
 
         // 멤버별 "분석이 완료된" 최신 meetingId — 새로 생성만 되고 분석 전인 미팅이 있어도
@@ -1380,13 +1380,15 @@ public class AnalysisService {
                 .filter(m -> analysisByMeetingId.containsKey(m.getId()))
                 .forEach(m -> latestMeetingIdByMember.putIfAbsent(m.getMemberId(), m.getId()));
 
-        List<Long> latestMeetingIds = new ArrayList<>(latestMeetingIdByMember.values());
-        if (latestMeetingIds.isEmpty()) return List.of();
+        if (latestMeetingIdByMember.isEmpty()) return List.of();
 
         // 미팅의 멤버 본인이 제출한 서베이만 사용 — 타인(리더 등) 제출분이 섞이면 toMap Duplicate key로 500 발생
-        Map<Long, Survey> surveyByMeetingId = surveyRepository.findByMeetingIdIn(latestMeetingIds)
+        // 개인 평균(centering) 계산을 위해 과거 미팅 서베이까지 함께 조회
+        Map<Long, Long> memberIdByMeetingId = allMeetings.stream()
+                .collect(Collectors.toMap(Meeting::getId, Meeting::getMemberId));
+        Map<Long, Survey> surveyByMeetingId = surveyRepository.findByMeetingIdIn(allMeetingIds)
                 .stream()
-                .filter(s -> Objects.equals(latestMeetingIdByMember.get(s.getMemberId()), s.getMeetingId()))
+                .filter(s -> Objects.equals(memberIdByMeetingId.get(s.getMeetingId()), s.getMemberId()))
                 .collect(Collectors.toMap(Survey::getMeetingId, s -> s, (a, b) -> a));
 
         Map<Long, User> userById = members.stream().collect(Collectors.toMap(User::getId, u -> u));
@@ -1405,13 +1407,41 @@ public class AnalysisService {
                     ? Math.round((surveyScore - safetyScore) * 10.0) / 10.0
                     : null;
 
+            // allMeetings는 createdAt 내림차순 → 이번 미팅보다 뒤에 있는 같은 멤버 미팅이 과거 미팅
+            List<Map<String, Object>> pastScores = allMeetings
+                    .subList(allMeetingIds.indexOf(meetingId) + 1, allMeetings.size()).stream()
+                    .filter(m -> m.getMemberId().equals(memberId))
+                    .map(m -> surveyByMeetingId.get(m.getId()))
+                    .filter(Objects::nonNull)
+                    .map(Survey::getScores)
+                    .toList();
+            RadarX x = computeRadarX(survey != null ? survey.getScores() : null, pastScores);
+
             User member = userById.get(memberId);
             HonestyDirection dir = computeDirection(honestyGap);
             RiskLevel risk = computeRiskLevel(honestyGap);
             result.add(new RadarDataPoint(memberId, member.getName(), surveyScore, safetyScore, honestyGap,
-                    dir, risk, computeFlightRiskLabel(safetyScore, dir, risk)));
+                    dir, risk, computeFlightRiskLabel(safetyScore, dir, risk), x.value(), x.mode()));
         }
         return result;
+    }
+
+    // 누적 응답(이번 포함)이 이 횟수 이상이면 개인 평균 대비 편차로 전환
+    static final int CENTERING_MIN_RESPONSES = 4;
+
+    record RadarX(Double value, String mode) {}
+
+    // 레이더 X축: 응답 누적 < 4회면 surveyScore 원값(raw), 이상이면 이번 점수 - 과거 평균(centered).
+    static RadarX computeRadarX(Map<String, Object> currentScores, List<Map<String, Object>> pastScores) {
+        Double current = computeSurveyScore(currentScores);
+        if (current == null) return new RadarX(null, "raw");
+        List<Double> past = pastScores.stream()
+                .map(AnalysisService::computeSurveyScore)
+                .filter(Objects::nonNull)
+                .toList();
+        if (past.size() + 1 < CENTERING_MIN_RESPONSES) return new RadarX(current, "raw");
+        double mean = past.stream().mapToDouble(Double::doubleValue).average().orElseThrow();
+        return new RadarX(Math.round((current - mean) * 10.0) / 10.0, "centered");
     }
 
     // @Transactional 미적용: 내부에서 외부 LLM API를 호출하므로 DB 커넥션을 길게 점유하지 않도록

@@ -27,6 +27,9 @@ export interface RadarDataPoint {
   honestyGap: number;
   direction: RadarDirection;
   riskLevel: RadarRiskLevel;
+  // 레이더 X축: raw = surveyScore 원값(0~100), centered = 개인 평균 대비 편차 (응답 4회 이상)
+  xValue: number | null;
+  xMode: 'raw' | 'centered';
 }
 
 // 발화 비율 인터페이스

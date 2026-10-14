@@ -9,6 +9,8 @@ export const MOCK_RADAR: RadarDataPoint[] = [
     honestyGap: 56,
     direction: 'OVERREPORT',
     riskLevel: 'DANGER',
+    xValue: 87,
+    xMode: 'raw',
   },
   {
     memberId: 2,
@@ -18,6 +20,8 @@ export const MOCK_RADAR: RadarDataPoint[] = [
     honestyGap: 36,
     direction: 'OVERREPORT',
     riskLevel: 'WARNING',
+    xValue: 78,
+    xMode: 'raw',
   },
   {
     memberId: 3,
@@ -27,6 +31,8 @@ export const MOCK_RADAR: RadarDataPoint[] = [
     honestyGap: -2,
     direction: 'UNDERREPORT',
     riskLevel: 'SAFE',
+    xValue: 80,
+    xMode: 'raw',
   },
   {
     memberId: 4,
@@ -36,6 +42,8 @@ export const MOCK_RADAR: RadarDataPoint[] = [
     honestyGap: -28,
     direction: 'UNDERREPORT',
     riskLevel: 'CAUTION',
+    xValue: 44,
+    xMode: 'raw',
   },
   {
     memberId: 5,
@@ -45,6 +53,8 @@ export const MOCK_RADAR: RadarDataPoint[] = [
     honestyGap: 3,
     direction: 'OVERREPORT',
     riskLevel: 'WARNING',
+    xValue: 38,
+    xMode: 'raw',
   },
   {
     memberId: 6,
@@ -54,6 +64,8 @@ export const MOCK_RADAR: RadarDataPoint[] = [
     honestyGap: -3,
     direction: 'UNDERREPORT',
     riskLevel: 'SAFE',
+    xValue: 61,
+    xMode: 'raw',
   },
 ];
 
