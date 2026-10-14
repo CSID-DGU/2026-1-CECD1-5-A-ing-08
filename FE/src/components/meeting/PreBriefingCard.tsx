@@ -181,7 +181,7 @@ export default function PreBriefingCard({ data }: Props) {
     ? [data.survey.topic.trim()]
         .map((topic) => ({
           topic,
-          question: topicQuestions.find((item) => item.topic === topic)?.question,
+          questions: topicQuestions.filter((item) => item.topic === topic).map((item) => item.question),
         }))
     : [];
 
@@ -257,15 +257,19 @@ export default function PreBriefingCard({ data }: Props) {
         <div className={`mt-4 bg-white ${guideBoxClassName}`}>
           <p className="text-xs font-semibold text-gray-500">이번 미팅 주제</p>
           <div className="mt-3 divide-y divide-gray-100">
-            {surveyTopics.map(({ topic, question }, index) => (
+            {surveyTopics.map(({ topic, questions }, index) => (
               <div key={`${topic}-${index}`} className="py-3 first:pt-0 last:pb-0">
                 <p className="text-sm font-semibold text-gray-900">{topic}</p>
-                {question && (
-                  <div className="mt-2 flex items-start gap-2">
-                    <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
-                      추천 질문
-                    </span>
-                    <p className="text-sm leading-relaxed text-gray-700">{question}</p>
+                {questions.length > 0 && (
+                  <div className="mt-2 flex flex-col gap-2">
+                    {questions.map((question, questionIndex) => (
+                      <div key={`${question}-${questionIndex}`} className="flex items-start gap-2">
+                        <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                          추천 질문
+                        </span>
+                        <p className="text-sm leading-relaxed text-gray-700">{question}</p>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

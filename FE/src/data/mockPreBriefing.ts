@@ -23,8 +23,12 @@ export const MOCK_PRE_BRIEFING: PreBriefingData = {
   surveyTopicQuestion: {
     questions: [
       {
-        topic: 'QA 리소스와 배포 일정 조율을 이야기하고 싶습니다.',
-        question: 'QA 리소스와 배포 일정을 조율할 때, 지금 가장 먼저 맞춰봐야 할 부분은 어디일까요?',
+        topic: '프로젝트 중간 발표 과정에서 필요한 근거 마련, 앞으로의 방향성 고민',
+        question: '중간 발표에 필요한 근거를 마련하면서, 지금 더 확인해 보고 싶은 부분이 있나요?',
+      },
+      {
+        topic: '프로젝트 중간 발표 과정에서 필요한 근거 마련, 앞으로의 방향성 고민',
+        question: '앞으로의 프로젝트 방향에 관해, 이번 미팅에서 함께 고민해 보고 싶은 부분이 있나요?',
       },
     ],
   },
@@ -34,7 +38,7 @@ export const MOCK_PRE_BRIEFING: PreBriefingData = {
     issues: [],
     desiredRoles: ['방향성 코칭', '리소스 지원'],
     surveyScore: 68,
-    topic: 'QA 리소스와 배포 일정 조율을 이야기하고 싶습니다.',
+    topic: '프로젝트 중간 발표 과정에서 필요한 근거 마련, 앞으로의 방향성 고민',
   },
   lastMeeting: {
     safetyScore: 72,

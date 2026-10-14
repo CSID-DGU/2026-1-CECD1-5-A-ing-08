@@ -88,8 +88,11 @@ public class GeneratedGuideService {
         }
         if (result instanceof PreBriefingResponse.SurveyTopicQuestion question) {
             return question.questions() != null && !question.questions().isEmpty()
+                    && question.questions().size() <= 2
                     && question.questions().stream().allMatch(item ->
-                            hasText(item.topic()) && hasText(item.question()));
+                            hasText(item.topic()) && hasText(item.question()))
+                    && question.questions().stream().map(item -> item.question().trim()).distinct().count()
+                            == question.questions().size();
         }
         if (result instanceof AnalysisResultResponse.MeetingCoaching guide) {
             return guide.gapSummary() != null && guide.behaviorAnalysis() != null
