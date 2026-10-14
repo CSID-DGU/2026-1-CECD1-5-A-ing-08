@@ -107,9 +107,10 @@ function buildFallbackGuide(data: PreBriefingData): CoachingGuideViewModel {
       : []),
   ];
 
-  const suggestedQuestions = data.recommendedTopics.length
-    ? data.recommendedTopics
-    : ['최근 업무에서 가장 신경 쓰이는 부분은 무엇인가요?', '지난 미팅 이후 제가 확인해야 할 약속이나 지원이 있었나요?'];
+  const suggestedQuestions = [
+    '최근 업무에서 이야기해 보고 싶은 부분이 있나요?',
+    '이번 미팅에서 제가 확인하거나 도와드리면 좋을 부분이 있나요?',
+  ];
 
   return {
     focusArea,
@@ -174,6 +175,15 @@ export default function PreBriefingCard({ data }: Props) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const guide = data.coachingGuide ?? buildFallbackGuide(data);
   const focusBoxStyles = getFocusAreaBoxStyles(guide.focusArea);
+  const topicQuestions = data.surveyTopicQuestion?.questions ?? [];
+  const legacyQuestion = data.surveyTopicQuestion?.question;
+  const surveyTopics = data.survey.submitted && data.survey.topic?.trim()
+    ? [data.survey.topic.trim()]
+        .map((topic) => ({
+          topic,
+          question: topicQuestions.find((item) => item.topic === topic)?.question,
+        }))
+    : [];
 
   return (
     <section className="w-full max-w-[600px] rounded-xl border border-gray-100 bg-white px-6 py-5 shadow-sm">
@@ -235,13 +245,44 @@ export default function PreBriefingCard({ data }: Props) {
       <div className={`mt-4 bg-white ${guideBoxClassName}`}>
         <p className="text-xs font-semibold text-gray-500">오늘 물어볼 질문</p>
         <div className="mt-2.5 flex flex-col gap-2">
-          {guide.suggestedQuestions.map((question, index) => (
+          {guide.suggestedQuestions.slice(0, 2).map((question, index) => (
             <p key={`${question}-${index}`} className="text-sm leading-relaxed text-gray-900">
               {question}
             </p>
           ))}
         </div>
       </div>
+
+      {surveyTopics.length > 0 && (
+        <div className={`mt-4 bg-white ${guideBoxClassName}`}>
+          <p className="text-xs font-semibold text-gray-500">이번 미팅 주제</p>
+          <div className="mt-3 divide-y divide-gray-100">
+            {surveyTopics.map(({ topic, question }, index) => (
+              <div key={`${topic}-${index}`} className="py-3 first:pt-0 last:pb-0">
+                <p className="text-sm font-semibold text-gray-900">{topic}</p>
+                {question && (
+                  <div className="mt-2 flex items-start gap-2">
+                    <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                      추천 질문
+                    </span>
+                    <p className="text-sm leading-relaxed text-gray-700">{question}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+            {legacyQuestion && topicQuestions.length === 0 && (
+              <div className="py-3 first:pt-0 last:pb-0">
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                    추천 질문
+                  </span>
+                  <p className="text-sm leading-relaxed text-gray-700">{legacyQuestion}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <ActionItems items={data.pendingPromises} />
     </section>
