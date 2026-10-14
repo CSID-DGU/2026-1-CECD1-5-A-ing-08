@@ -103,10 +103,11 @@ class SurveyServiceTest {
     private static final Map<String, Object> ANSWERS = Map.of("q1", 3, "q2", 3, "q3", 3);
 
     @Test
-    void encodeScoresStoresRawAnswersWithVersion() {
+    void encodeScoresReversesQ1Q2IntoLevelKeys() {
         Map<String, Object> encoded = SurveyService.encodeScores(Map.of("q1", 1, "q2", 4, "q3", 5));
 
-        assertThat(encoded).isEqualTo(Map.of("version", "v2", "q1", 1, "q2", 4, "q3", 5));
+        // Q1·Q2 역문항: 6 - 응답, Q3 정문항: 그대로
+        assertThat(encoded).isEqualTo(Map.of("vulnerabilityLevel", 5, "dissentLevel", 2, "initiativeLevel", 5));
     }
 
     @Test

@@ -46,16 +46,15 @@ public class SurveyService {
         surveyRepository.save(survey);
     }
 
-    // raw 응답과 문항 버전만 저장 { version: "v2", q1, q2, q3 } — 역문항 변환·합산은 읽을 때 SurveyItems로 계산
+    // 요청 { q1, q2, q3 } → 저장 { vulnerabilityLevel, dissentLevel, initiativeLevel } (역문항은 6 - 응답으로 변환)
     static Map<String, Object> encodeScores(Map<String, Object> answers) {
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("version", SurveyItems.VERSION);
         for (SurveyItems.Item item : SurveyItems.ITEMS) {
             if (!(answers.get(item.id()) instanceof Integer value)
                     || value < SurveyItems.MIN_SCALE || value > SurveyItems.MAX_SCALE) {
                 throw new BusinessException(ErrorCode.INVALID_INPUT);
             }
-            result.put(item.id(), value);
+            result.put(item.key(), item.score(value));
         }
         return result;
     }

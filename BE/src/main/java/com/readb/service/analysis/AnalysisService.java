@@ -11,7 +11,6 @@ import com.readb.domain.promise.Promise;
 import com.readb.domain.promise.PromiseStatus;
 import com.readb.domain.recording.Recording;
 import com.readb.domain.survey.Survey;
-import com.readb.domain.survey.SurveyItems;
 import com.readb.dto.analysis.AnalysisResultResponse;
 import com.readb.dto.meeting.PreBriefingResponse;
 import com.readb.dto.analysis.AnalysisResultResponse.*;
@@ -641,19 +640,8 @@ public class AnalysisService {
     // 가중치 V 40% / D 35% / I 25%. (모두 3점 → ~41, 모두 4점 → ~69, 모두 5점 → 100)
     private static final double SURVEY_GAMMA = 1.3;
 
-    // v2: 역문항 변환 점수 평균(1~5)에 동일한 정규화·γ 곡선 적용 (모두 3점 → ~41, v1과 같은 눈금)
-    // v1(version 키 없음 또는 "v1"): 기존 V/D/I 가중 공식 유지
     static Double computeSurveyScore(Map<String, Object> scores) {
         if (scores == null) return null;
-        if (SurveyItems.VERSION.equals(scores.get("version"))) {
-            int total = 0;
-            for (SurveyItems.Item item : SurveyItems.ITEMS) {
-                if (!(scores.get(item.id()) instanceof Number raw)) return null;
-                total += item.score(raw.intValue());
-            }
-            double mean = (double) total / SurveyItems.ITEMS.size();
-            return (double) Math.round(surveyDimension(mean) * 100.0);
-        }
         Object vObj = scores.get("vulnerabilityLevel");
         Object dObj = scores.get("dissentLevel");
         Object iObj = scores.get("initiativeLevel");
@@ -1444,13 +1432,10 @@ public class AnalysisService {
     record RadarX(Double value, String mode) {}
 
     // 레이더 X축: 응답 누적 < 4회면 surveyScore 원값(raw), 이상이면 이번 점수 - 과거 평균(centered).
-    // 개인 평균에는 이번 서베이와 같은 문항 버전만 사용 (v1·v2 혼합 금지)
     static RadarX computeRadarX(Map<String, Object> currentScores, List<Map<String, Object>> pastScores) {
         Double current = computeSurveyScore(currentScores);
         if (current == null) return new RadarX(null, "raw");
-        Object version = currentScores.get("version");
         List<Double> past = pastScores.stream()
-                .filter(s -> s != null && Objects.equals(s.get("version"), version))
                 .map(AnalysisService::computeSurveyScore)
                 .filter(Objects::nonNull)
                 .toList();
