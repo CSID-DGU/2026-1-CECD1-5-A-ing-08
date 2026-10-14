@@ -523,7 +523,7 @@ Authorization: Bearer <token> (LEADER)
 > **레이더 X축 (`xValue`, `xMode`)** — 산출식은 A.2 참조
 > | xMode | 조건 | xValue | FE 표시 위치 |
 > |-------|------|--------|--------------|
-> | `raw` | 같은 문항 버전 누적 응답(이번 포함) < 4회 | surveyScore 원값 (0~100) | X = xValue |
+> | `raw` | 누적 응답(이번 포함) < 4회 | surveyScore 원값 (0~100) | X = xValue |
 > | `centered` | 누적 응답 ≥ 4회 | 이번 surveyScore − 과거 surveyScore 평균 | X = clamp(0, 100, 45 + xValue) — 개인 평균을 분기선에 둠 |
 >
 > `honestyGap`은 xMode와 무관하게 `surveyScore − safetyScore`로 계산한다.
@@ -715,7 +715,7 @@ Authorization: Bearer <token> (MEMBER)
 | scores.q1~q3 | number | O | 1~5 정수, 3문항 모두 필수 (누락·범위 밖이면 400 INVALID_INPUT) |
 | topic | string | X | Q4 자유 서술, 최대 200자. 공백만 있으면 null |
 
-**문항 (v2)** — 텍스트는 FE `constants/surveyQuestions.ts`, 메타데이터는 BE `SurveyItems`
+**문항** — 텍스트는 FE `constants/surveyQuestions.ts`, 메타데이터는 BE `SurveyItems`
 | id | 문항 | 측정 개념 | 코딩 |
 |----|------|-----------|------|
 | q1 | {period}, 타이밍이 맞지 않아 아직 리더에게 꺼내지 않은 업무 고민이 있다 | disclosure | 역문항 |
@@ -724,11 +724,11 @@ Authorization: Bearer <token> (MEMBER)
 
 > `{period}`: 해당 멤버-리더 쌍의 첫 미팅(`round === 1`)이면 "최근 2주간", 아니면 "지난 미팅 이후".
 
-**DB 저장 형식** (`surveys.scores` JSONB) — raw 응답과 문항 버전만 저장, 역문항 변환·합산은 조회 시 계산
+**DB 저장 형식** (`surveys.scores` JSONB) — 서버가 역문항을 변환한 점수를 기존 V/D/I 키로 저장
 ```json
-{ "version": "v2", "q1": 2, "q2": 4, "q3": 5 }
+{ "vulnerabilityLevel": 4, "dissentLevel": 2, "initiativeLevel": 5 }
 ```
-> 이전 문항(V/D/I) 응답은 삭제하지 않고 `"version": "v1"`으로 보존 (마이그레이션 `2026-10-13_tag_survey_scores_version.sql`).
+> 요청 `{ q1: 2, q2: 4, q3: 5 }` → q1·q2는 `6 − 응답`, q3는 그대로. 원 응답은 같은 식으로 역산 가능하므로 따로 저장하지 않는다.
 
 **Response** `201` — `data: null`
 
@@ -760,7 +760,7 @@ Authorization: Bearer <token>
     "id": 5,
     "meetingId": 10,
     "memberId": 7,
-    "scores": { "version": "v2", "q1": 2, "q2": 4, "q3": 5 }
+    "scores": { "vulnerabilityLevel": 4, "dissentLevel": 2, "initiativeLevel": 5 }
   }
 }
 ```
@@ -791,7 +791,7 @@ Authorization: Bearer <token> (MEMBER)
       {
         "meetingId": 10,
         "submittedAt": "2026-05-08T13:30:00",
-        "scores": { "version": "v2", "q1": 2, "q2": 4, "q3": 5 }
+        "scores": { "vulnerabilityLevel": 4, "dissentLevel": 2, "initiativeLevel": 5 }
       }
     ],
     "totalElements": 12,
@@ -2130,24 +2130,22 @@ adjusted_count = round(raw_count × 30 ÷ actual_duration_minutes)
 
 ### A.2 Survey Score (X축) — 사전 서베이 기반
 
-**v2 (현행)**
 ```
-scored(q) = 역문항(q1, q2) ? 6 − raw : raw
-mean      = (scored(q1) + scored(q2) + scored(q3)) / 3        // 1~5
-surveyScore = round(((mean − 1) / 4)^1.3 × 100)               // 0~100, γ=1.3 고평가 할인
+V = vulnerabilityLevel = 6 − q1   (역문항)
+D = dissentLevel       = 6 − q2   (역문항)
+I = initiativeLevel    = q3
+f(level) = ((level − 1) / 4)^1.3                              // 0~1, γ=1.3 고평가 할인
+surveyScore = round(f(V)×40 + f(D)×35 + f(I)×25)              // 0~100
 ```
-모두 3점 → 41, 모두 4점 → 69, 모두 5점 → 100 (v1과 같은 눈금)
-
-**v1 (구 문항, 보존 데이터)**: V/D/I 각각 `((level − 1) / 4)^1.3`에 가중치 40/35/25를 곱해 합산.
+모두 3점 → 41, 모두 4점 → 69, 모두 5점 → 100
 
 **레이더 X축 (person-mean centering)**
 ```
-n = 같은 문항 버전의 누적 응답 수 (이번 포함)
+n = 누적 응답 수 (이번 포함)
 n < 4  → xMode = "raw",      xValue = surveyScore
 n ≥ 4  → xMode = "centered", xValue = surveyScore − avg(과거 surveyScore)
 ```
 - 전환 기준 4는 `AnalysisService.CENTERING_MIN_RESPONSES`
-- 개인 평균에 v1과 v2를 섞지 않는다
 
 ---
 
@@ -2225,3 +2223,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-06-15 | v2.9 | **5.4절 신규**: `DELETE /meetings/{id}` 미팅 취소 (CREATED 상태만, 리더 전용, 회차 자동 재계산, MEETING_NOT_CANCELABLE 409). **5.3절**: 단일 미팅 응답에 `memberId` 추가 (미팅 진행 체크리스트 로드용). **5.2절**: 미팅 목록 역할별 스코프 명시 — 멤버는 리더와의 1on1만(셀프 미팅 제외). **6.1절**: 서베이 제출을 해당 미팅의 멤버 본인으로 제한(타인 제출 403 명시). **9.3절**: 약속 완료 권한을 1on1 참여자(리더 또는 멤버)로 확대. **9.3b절 신규**: `PATCH /promises/{id}/incomplete` 완료 해제(체크박스 off). 에러 코드 목록에 MEETING_NOT_CANCELABLE, PROMISE_NOT_FOUND 추가. |
 | 2026-10-14 | v3.0 | **사전 설문 v2 문항 교체**: 6.1 요청을 `scores: {q1,q2,q3}` + `topic`으로 변경 (실코드 기준, 기존 energyLevel/issues 형식 삭제), Q1·Q2 역문항, 첫 미팅 `{period}` 분기, DB에 raw+version 저장. 6.2/6.3 응답 실코드 기준 동기화. A.2 surveyScore 산출식 v2 반영. |
 | 2026-10-14 | v3.1 | 4.3 레이더 응답에 `xValue`/`xMode` 추가 — 누적 응답 4회 이상이면 개인 평균 대비 편차(centered)로 X축 표시. A.2에 person-mean centering 산출식 추가. |
+| 2026-10-14 | v3.2 | 설문 저장 형식을 기존 V/D/I 키로 환원 — 서버가 역문항을 변환한 점수를 `vulnerabilityLevel`/`dissentLevel`/`initiativeLevel`에 저장, `version` 키·v1 마이그레이션 제거 (기존 응답 0건). A.2를 단일 산출식(V/D/I 가중 40/35/25)으로 정리. |
