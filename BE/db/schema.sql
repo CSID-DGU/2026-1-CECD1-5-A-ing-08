@@ -67,7 +67,8 @@ CREATE TABLE public.surveys (
     meeting_id      BIGINT NOT NULL,
     member_id       BIGINT NOT NULL,
     scores          JSONB,
-    submitted_at    TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    topic           VARCHAR(200),
+    submitted_at   TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_surveys_meeting_member UNIQUE (meeting_id, member_id),
     CONSTRAINT fk_surveys_meeting FOREIGN KEY (meeting_id) REFERENCES public.meetings (id),
     CONSTRAINT fk_surveys_member FOREIGN KEY (member_id) REFERENCES public.users (id)

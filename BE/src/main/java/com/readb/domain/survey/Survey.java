@@ -31,7 +31,7 @@ public class Survey {
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> scores;
 
-    @Column(name = "topic")
+    @Column(name = "topic", length = 200)
     private String topic;
 
     @CreationTimestamp
