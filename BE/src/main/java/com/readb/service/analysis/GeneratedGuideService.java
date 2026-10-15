@@ -81,8 +81,18 @@ public class GeneratedGuideService {
     private boolean isValid(Object result) {
         if (result instanceof PreBriefingResponse.CoachingGuide guide) {
             return hasText(guide.focusArea()) && hasText(guide.guideSummary())
-                    && guide.suggestedQuestions() != null && !guide.suggestedQuestions().isEmpty()
-                    && guide.suggestedQuestions().stream().allMatch(this::hasText);
+                    && guide.suggestedQuestions() != null && guide.suggestedQuestions().size() == 2
+                    && guide.suggestedQuestions().stream().allMatch(this::hasText)
+                    && !guide.suggestedQuestions().get(0).trim()
+                            .equals(guide.suggestedQuestions().get(1).trim());
+        }
+        if (result instanceof PreBriefingResponse.SurveyTopicQuestion question) {
+            return question.questions() != null && !question.questions().isEmpty()
+                    && question.questions().size() <= 2
+                    && question.questions().stream().allMatch(item ->
+                            hasText(item.topic()) && hasText(item.question()))
+                    && question.questions().stream().map(item -> item.question().trim()).distinct().count()
+                            == question.questions().size();
         }
         if (result instanceof AnalysisResultResponse.MeetingCoaching guide) {
             return guide.gapSummary() != null && guide.behaviorAnalysis() != null

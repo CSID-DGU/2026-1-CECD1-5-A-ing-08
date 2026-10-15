@@ -12,14 +12,16 @@ public record PreBriefingResponse(
         LastMeetingSummary lastMeeting,
         List<PendingPromise> pendingPromises,
         List<String> recommendedTopics,
-        CoachingGuide coachingGuide
+        CoachingGuide coachingGuide,
+        SurveyTopicQuestion surveyTopicQuestion
 ) {
     public record SurveyBrief(
             boolean submitted,
             Integer energyLevel,
             List<String> issues,
             List<String> desiredRoles,
-            Double surveyScore
+            Double surveyScore,
+            String topic
     ) {}
 
     public record LastMeetingSummary(
@@ -39,6 +41,10 @@ public record PreBriefingResponse(
             List<String> evidence,
             List<String> suggestedQuestions
     ) {}
+
+    public record SurveyTopicQuestion(String question, List<TopicQuestion> questions) {}
+
+    public record TopicQuestion(String topic, String question) {}
 
     public record PendingPromise(
             Long promiseId,

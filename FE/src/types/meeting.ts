@@ -72,12 +72,20 @@ export interface PreBriefingData {
     evidence: string[];
     suggestedQuestions: string[];
   };
+  surveyTopicQuestion?: {
+    question?: string | null;
+    questions?: {
+      topic: string;
+      question: string;
+    }[] | null;
+  } | null;
   survey: {
     submitted: boolean;
     energyLevel: number | null;
     issues: string[];
     desiredRoles: string[];
     surveyScore: number | null;
+    topic: string | null;
   };
   lastMeeting: {
     safetyScore: number;

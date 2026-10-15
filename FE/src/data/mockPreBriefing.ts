@@ -16,17 +16,29 @@ export const MOCK_PRE_BRIEFING: PreBriefingData = {
       '미이행 약속 2건 중 1건이 기한을 넘겼습니다.',
     ],
     suggestedQuestions: [
-      '요즘 작업하면서 가장 막히거나 말하기 어려웠던 부분이 있었나요?',
-      '지난번에 이야기한 QA 리소스 건은 지금 어떤 상태인가요?',
-      '제가 바로 도와주기보다 먼저 더 들어야 할 맥락이 있다면 무엇인가요?',
+      '최근 진행 중인 일에서 어려웠던 점이 있다면 편하게 이야기해주실 수 있나요?',
+      '이번 미팅에서 제가 확인하거나 도와드리면 좋을 부분은 무엇인가요?',
+    ],
+  },
+  surveyTopicQuestion: {
+    questions: [
+      {
+        topic: '프로젝트 중간 발표 과정에서 필요한 근거 마련, 앞으로의 방향성 고민',
+        question: '중간 발표에 필요한 근거를 마련하면서, 지금 더 확인해 보고 싶은 부분이 있나요?',
+      },
+      {
+        topic: '프로젝트 중간 발표 과정에서 필요한 근거 마련, 앞으로의 방향성 고민',
+        question: '앞으로의 프로젝트 방향에 관해, 이번 미팅에서 함께 고민해 보고 싶은 부분이 있나요?',
+      },
     ],
   },
   survey: {
     submitted: true,
     energyLevel: 3,
-    issues: ['QA 리소스', '배포 일정'],
+    issues: [],
     desiredRoles: ['방향성 코칭', '리소스 지원'],
     surveyScore: 68,
+    topic: '프로젝트 중간 발표 과정에서 필요한 근거 마련, 앞으로의 방향성 고민',
   },
   lastMeeting: {
     safetyScore: 72,
