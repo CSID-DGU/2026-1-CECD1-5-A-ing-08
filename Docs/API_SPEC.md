@@ -551,42 +551,33 @@ Authorization: Bearer <token> (LEADER)
 **Request Body**
 ```json
 {
+  "teamId": 1,
   "memberId": 1,
+  "title": "Q3 목표 점검",
   "scheduledAt": "2026-05-08T14:00:00"
 }
 ```
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
+| teamId | number | O | 팀 ID |
 | memberId | number | O | 1on1 대상 멤버 ID |
-| scheduledAt | string | X | 예정 일시 (ISO-8601). 생략 시 현재 시각 |
+| title | string | X | 미팅 제목 (최대 100자). 생략·공백이면 예정일 기준 `YYYY년 MM월 DD일 1on1 미팅` (예정일도 없으면 오늘 날짜) |
+| scheduledAt | string | X | 예정 일시 (ISO-8601). 생략 시 `null`로 저장 |
 
 **Response** `201`
 ```json
 {
   "success": true,
   "code": "SUCCESS",
-  "message": "미팅이 생성되었습니다.",
   "data": {
     "meetingId": 10,
-    "round": 12,
-    "memberId": 1,
-    "memberName": "강다은",
-    "scheduledAt": "2026-05-08T14:00:00",
-    "status": "PENDING",
-    "overduePromises": [
-      {
-        "promiseId": 2,
-        "content": "AWS 프로덕션 접근 권한 부여",
-        "dueDate": "2026-04-20"
-      }
-    ]
+    "status": "CREATED"
   }
 }
 ```
 
-> `round`: 해당 리더-멤버 페어의 누적 회차 (서버 자동 산출)  
-> `overduePromises`: 미이행 약속 자동 포함 (F-63 요구사항)
+> 회차(`round`)는 5.2 목록·5.3 단일 조회에서, 미이행 약속(F-63)은 9.4 `GET /promises/overdue`에서 조회
 
 ---
 
@@ -611,6 +602,7 @@ Authorization: Bearer <token>
     {
       "meetingId": 10,
       "round": 12,
+      "title": "Q3 목표 점검",
       "partnerName": "강다은",
       "scheduledAt": "2026-05-08T14:00:00",
       "durationSec": 2400,
@@ -619,6 +611,7 @@ Authorization: Bearer <token>
     {
       "meetingId": 11,
       "round": 1,
+      "title": "2026년 05월 09일 1on1 미팅",
       "partnerName": "김민준",
       "scheduledAt": "2026-05-09T10:00:00",
       "durationSec": null,
@@ -2224,3 +2217,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-10-14 | v3.0 | **사전 설문 v2 문항 교체**: 6.1 요청을 `scores: {q1,q2,q3}` + `topic`으로 변경 (실코드 기준, 기존 energyLevel/issues 형식 삭제), Q1·Q2 역문항, 첫 미팅 `{period}` 분기, DB에 raw+version 저장. 6.2/6.3 응답 실코드 기준 동기화. A.2 surveyScore 산출식 v2 반영. |
 | 2026-10-14 | v3.1 | 4.3 레이더 응답에 `xValue`/`xMode` 추가 — 누적 응답 4회 이상이면 개인 평균 대비 편차(centered)로 X축 표시. A.2에 person-mean centering 산출식 추가. |
 | 2026-10-14 | v3.2 | 설문 저장 형식을 기존 V/D/I 키로 환원 — 서버가 역문항을 변환한 점수를 `vulnerabilityLevel`/`dissentLevel`/`initiativeLevel`에 저장, `version` 키·v1 마이그레이션 제거 (기존 응답 0건). A.2를 단일 산출식(V/D/I 가중 40/35/25)으로 정리. |
+| 2026-10-17 | v3.3 | 5.1 요청에 `teamId`(필수, 실코드 동기화)·`title`(선택) 명시 — 제목 생략 시 기본값 `YYYY년 MM월 DD일 1on1 미팅` (기존 `1:1 Meeting YYYY-MM-DD`). 5.2 목록 응답에 `title` 추가. 5.1 응답을 실코드 기준 `{meetingId, status: "CREATED"}`로 정정 (round·overduePromises·message 삭제), `scheduledAt` 생략 시 현재 시각 → null로 정정. |

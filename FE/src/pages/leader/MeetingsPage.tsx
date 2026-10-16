@@ -190,9 +190,9 @@ export default function MeetingsPage({
                           <div>
                             <p className="text-sm text-gray-500">{formatScheduledAt(meeting.scheduledAt)}</p>
                             <h3 className="mt-2 text-xl font-semibold text-gray-900">
-                              {meeting.partnerName}님과의 1on1
+                              {meeting.title || `${meeting.partnerName}님과의 1on1`}
                             </h3>
-                            <p className="mt-3 text-sm text-gray-600">{meeting.round}회차</p>
+                            <p className="mt-3 text-sm text-gray-600">{meeting.partnerName} · {meeting.round}회차</p>
                           </div>
                           <span className={`rounded-full px-3 py-1 text-sm font-semibold ${getStatus(meeting.status).badge}`}>
                             {getStatus(meeting.status).label}
@@ -288,7 +288,7 @@ export default function MeetingsPage({
                           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div className="flex flex-wrap items-baseline gap-2">
                               <h4 className="text-base font-semibold text-gray-900">
-                                {meeting.partnerName}님과의 1on1
+                                {meeting.title || `${meeting.partnerName}님과의 1on1`}
                               </h4>
                               <span className="text-xs text-gray-400">
                                 {formatScheduledAt(meeting.scheduledAt)}
@@ -298,7 +298,7 @@ export default function MeetingsPage({
                               <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatus(meeting.status).badge}`}>
                                 {getStatus(meeting.status).label}
                               </span>
-                              <span className="text-sm text-gray-500">{meeting.round}회차</span>
+                              <span className="text-sm text-gray-500">{meeting.partnerName} · {meeting.round}회차</span>
                               {showCreateButton && meeting.status === 'CREATED' && (
                                 <span className="inline-block w-[64px]" aria-hidden />
                               )}

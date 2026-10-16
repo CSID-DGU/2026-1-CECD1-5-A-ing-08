@@ -45,6 +45,7 @@ export interface MeetingDetail {
 export interface MeetingListItem {
   meetingId: number;
   round: number;
+  title: string | null;
   partnerName: string;
   scheduledAt: string;
   durationSec: number | null;
