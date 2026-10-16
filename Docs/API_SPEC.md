@@ -597,7 +597,6 @@ Authorization: Bearer <token>
 {
   "success": true,
   "code": "SUCCESS",
-  "message": "요청이 성공적으로 처리되었습니다.",
   "data": [
     {
       "meetingId": 10,
@@ -634,11 +633,11 @@ Authorization: Bearer <token>
 {
   "success": true,
   "code": "SUCCESS",
-  "message": "요청이 성공적으로 처리되었습니다.",
   "data": {
     "meetingId": 10,
     "memberId": 1,
     "round": 12,
+    "title": "Q3 목표 점검",
     "scheduledAt": "2026-05-08T14:00:00",
     "durationSec": 2400,
     "status": "CREATED",
@@ -649,6 +648,7 @@ Authorization: Bearer <token>
 }
 ```
 
+> `title`: 미팅 제목. 제목 도입 전 데이터는 `1:1 Meeting` 등 기존 기본값일 수 있음.
 > `surveySubmitted`: 멤버의 사전 서베이 제출 여부. 리더가 미팅 시작 전 확인용.
 > `memberId`: 해당 미팅 멤버 ID. 리더 미팅 진행 화면이 이 값으로 멤버의 액션 플랜·약속 체크리스트(`/members/{memberId}/insight`)를 로드한다.
 
@@ -2218,3 +2218,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-10-14 | v3.1 | 4.3 레이더 응답에 `xValue`/`xMode` 추가 — 누적 응답 4회 이상이면 개인 평균 대비 편차(centered)로 X축 표시. A.2에 person-mean centering 산출식 추가. |
 | 2026-10-14 | v3.2 | 설문 저장 형식을 기존 V/D/I 키로 환원 — 서버가 역문항을 변환한 점수를 `vulnerabilityLevel`/`dissentLevel`/`initiativeLevel`에 저장, `version` 키·v1 마이그레이션 제거 (기존 응답 0건). A.2를 단일 산출식(V/D/I 가중 40/35/25)으로 정리. |
 | 2026-10-17 | v3.3 | 5.1 요청에 `teamId`(필수, 실코드 동기화)·`title`(선택) 명시 — 제목 생략 시 기본값 `YYYY년 MM월 DD일 1on1 미팅` (기존 `1:1 Meeting YYYY-MM-DD`). 5.2 목록 응답에 `title` 추가. 5.1 응답을 실코드 기준 `{meetingId, status: "CREATED"}`로 정정 (round·overduePromises·message 삭제), `scheduledAt` 생략 시 현재 시각 → null로 정정. |
+| 2026-10-17 | v3.4 | 5.3 단일 미팅 응답에 `title` 추가. 5.2·5.3 응답 예시에서 실제로 내려가지 않는 `message` 삭제 (실코드 동기화). |

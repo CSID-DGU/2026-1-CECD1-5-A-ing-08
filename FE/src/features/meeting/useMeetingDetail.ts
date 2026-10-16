@@ -6,6 +6,7 @@ const MOCK_MEETING: MeetingDetail = {
   meetingId: 0,
   memberId: 0,
   round: 1,
+  title: null,
   scheduledAt: new Date().toISOString(),
   durationSec: null,
   status: 'CREATED',

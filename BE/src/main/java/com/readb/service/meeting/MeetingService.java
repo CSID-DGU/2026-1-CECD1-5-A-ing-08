@@ -180,6 +180,7 @@ public class MeetingService {
                 meetingId,
                 meeting.getMemberId(),
                 round,
+                meeting.getTitle(),
                 meeting.getScheduledAt(),
                 durationSec,
                 meeting.getStatus().name(),
