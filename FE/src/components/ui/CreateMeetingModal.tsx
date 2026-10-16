@@ -94,7 +94,7 @@ export default function CreateMeetingModal({ isOpen, onClose, onCreated }: Props
     return `${y}-${m}-${String(d).padStart(2, "0")}`;
   };
 
-  const canCreate = selected && title.trim() && !isSubmitting;
+  const canCreate = selected && !isSubmitting;
 
   const handleCreate = async () => {
     if (!selected) return;
@@ -137,10 +137,10 @@ export default function CreateMeetingModal({ isOpen, onClose, onCreated }: Props
         </div>
 
         <div className="mb-6">
-          <p className="font-semibold mb-2">미팅 제목</p>
+          <p className="font-semibold mb-2">미팅 제목 <span className="text-sm font-normal text-gray-400">(선택)</span></p>
           <input
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#4E62E6]"
-            placeholder="미팅 제목을 입력해주세요."
+            placeholder="비워두면 'YYYY년 MM월 DD일 1on1 미팅'으로 저장돼요."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />

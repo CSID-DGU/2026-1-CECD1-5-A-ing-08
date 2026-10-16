@@ -34,6 +34,7 @@ export interface MeetingDetail {
   meetingId: number;
   memberId: number;
   round: number;
+  title: string | null;
   scheduledAt: string;
   durationSec: number | null;
   status: MeetingApiStatus;
@@ -45,6 +46,7 @@ export interface MeetingDetail {
 export interface MeetingListItem {
   meetingId: number;
   round: number;
+  title: string | null;
   partnerName: string;
   scheduledAt: string;
   durationSec: number | null;

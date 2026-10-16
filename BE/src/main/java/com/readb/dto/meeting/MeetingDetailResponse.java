@@ -6,6 +6,7 @@ public record MeetingDetailResponse(
         Long meetingId,
         Long memberId,
         int round,
+        String title,
         LocalDateTime scheduledAt,
         Integer durationSec,
         String status,
