@@ -35,6 +35,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -59,11 +61,14 @@ public class MeetingService {
     private final CareerEventRepository careerEventRepository;
     private final PromiseRepository promiseRepository;
 
+    private static final DateTimeFormatter DEFAULT_TITLE_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 '1on1 미팅'");
+
     @Transactional
     public MeetingCreateResponse createMeeting(Long leaderId, MeetingCreateRequest request) {
         Meeting meeting = Meeting.builder()
                 .teamId(request.teamId())
-                .title(resolveTitle(request.title()))
+                .title(resolveTitle(request.title(), request.scheduledAt()))
                 .leaderId(leaderId)
                 .memberId(request.memberId())
                 .scheduledAt(request.scheduledAt())
@@ -143,7 +148,7 @@ public class MeetingService {
                     .map(User::getName).orElse("");
             Integer durationSec = recordingRepository.findByMeetingId(m.getId())
                     .map(Recording::getDurationSec).orElse(null);
-            return new MeetingListResponse(m.getId(), round, partnerName,
+            return new MeetingListResponse(m.getId(), round, m.getTitle(), partnerName,
                     m.getScheduledAt(), durationSec, m.getStatus().name());
         }).toList();
     }
@@ -175,6 +180,7 @@ public class MeetingService {
                 meetingId,
                 meeting.getMemberId(),
                 round,
+                meeting.getTitle(),
                 meeting.getScheduledAt(),
                 durationSec,
                 meeting.getStatus().name(),
@@ -235,11 +241,12 @@ public class MeetingService {
         return val == null ? null : val.toString();
     }
 
-    private String resolveTitle(String title) {
+    private String resolveTitle(String title, LocalDateTime scheduledAt) {
         if (StringUtils.hasText(title)) {
             return title.trim();
         }
-        return "1:1 Meeting " + LocalDate.now();
+        LocalDate date = scheduledAt != null ? scheduledAt.toLocalDate() : LocalDate.now();
+        return date.format(DEFAULT_TITLE_FORMAT);
     }
 
     private void validateOwner(Meeting meeting, Long leaderId) {
