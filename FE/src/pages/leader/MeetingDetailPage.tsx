@@ -203,6 +203,9 @@ export default function MeetingDetailPage() {
                     <div className="h-20 rounded-lg bg-gray-100" />
                   </div>
                   <div className="mt-4 h-16 rounded-lg bg-gray-100" />
+                  <p className="mt-4 text-center text-sm text-gray-500" role="status">
+                    AI가 미팅 전 브리핑을 준비하고 있어요. 처음 생성할 때는 최대 3분까지 걸릴 수 있어요.
+                  </p>
                 </div>
               )}
               {!briefingLoading && briefing && <PreBriefingCard data={briefing} />}
