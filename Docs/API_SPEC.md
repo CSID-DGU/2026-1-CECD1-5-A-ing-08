@@ -2088,8 +2088,8 @@ export function useMeetingStatus(meetingId: number, enabled: boolean) {
 
 ```
 Whisper STT
-  → GPT-mini (Step 2) — Speech Act 분류 + 주제/블로커/약속 추출 + 발화 비율
-  → GPT-mini (Step 3) — 3-Gap 스코어링 + 코칭 피드백 + Career 태그
+  → Gemini (Step 2) — Speech Act 분류 + 주제/블로커/약속 추출 + 발화 비율
+  → Gemini (Step 3) — 3-Gap 스코어링 + 코칭 피드백 + Career 태그
 ```
 
 **Step 2 프롬프트 설계 원칙**

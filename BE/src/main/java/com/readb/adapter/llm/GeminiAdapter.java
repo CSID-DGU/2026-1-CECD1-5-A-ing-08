@@ -15,17 +15,17 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class GptMiniAdapter implements LlmAdapter {
+public class GeminiAdapter implements LlmAdapter {
 
     private final WebClient webClient;
 
-    @Value("${openai.api-key}")
+    @Value("${gemini.api-key}")
     private String apiKey;
 
-    @Value("${openai.gpt.url}")
-    private String gptUrl;
+    @Value("${gemini.url}")
+    private String url;
 
-    @Value("${openai.gpt.model}")
+    @Value("${gemini.model}")
     private String model;
 
     @Override
@@ -41,7 +41,7 @@ public class GptMiniAdapter implements LlmAdapter {
 
         try {
             Map<String, Object> response = webClient.post()
-                    .uri(gptUrl)
+                    .uri(url)
                     .header("Authorization", "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
@@ -52,11 +52,11 @@ public class GptMiniAdapter implements LlmAdapter {
             List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
             Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
             String result = (String) message.get("content");
-            log.info("GPT-mini 응답 수신. 길이: {}", result.length());
+            log.info("Gemini 응답 수신. 길이: {}", result.length());
             return result;
 
         } catch (Exception e) {
-            log.error("GPT-mini API 호출 실패", e);
+            log.error("Gemini API 호출 실패", e);
             throw new BusinessException(ErrorCode.ANALYSIS_FAILED);
         }
     }
