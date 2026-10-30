@@ -855,6 +855,41 @@ const uploadRecording = async (meetingId: number, blob: Blob, durationSec: numbe
 
 ---
 
+### 7.1-T 스크립트로 분석 (개발/테스트 전용)
+```
+POST /api/v1/meetings/{meetingId}/analyze-test
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+> 녹음 업로드·STT를 건너뛰고 전달받은 스크립트로 7.1과 동일한 분석(Recording 저장 → 분석 → 상태 COMPLETED/FAILED)을 진행. 미팅 리더만 호출 가능.
+
+**Request**
+```json
+{
+  "transcript": "[member]: 내용
+[leader]: 내용
+[member]: 내용",
+  "durationSec": 1800
+}
+```
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| transcript | string | O | 한 줄에 한 발화, `[leader]: ` / `[member]: ` 라벨 권장 (순서 무관). 라벨이 없으면 화자를 맥락으로 추론 |
+| durationSec | number | X | 미팅 길이(초) |
+
+**Response** `202` — `data: null`, 이후 7.2로 폴링
+
+**에러**
+| 코드 | HTTP | 상황 |
+|------|------|------|
+| INVALID_INPUT | 400 | transcript 누락/공백 |
+| FORBIDDEN | 403 | 미팅 리더가 아님 |
+| MEETING_NOT_FOUND | 404 | 존재하지 않는 미팅 |
+| ANALYSIS_IN_PROGRESS | 409 | 이미 분석이 진행 중인 미팅 |
+
+---
+
 ### 7.2 분석 진행 상태 폴링
 ```
 GET /api/v1/meetings/{meetingId}/status
@@ -2053,8 +2088,8 @@ export function useMeetingStatus(meetingId: number, enabled: boolean) {
 
 ```
 Whisper STT
-  → GPT-mini (Step 2) — Speech Act 분류 + 주제/블로커/약속 추출 + 발화 비율
-  → GPT-mini (Step 3) — 3-Gap 스코어링 + 코칭 피드백 + Career 태그
+  → Gemini (Step 2) — Speech Act 분류 + 주제/블로커/약속 추출 + 발화 비율
+  → Gemini (Step 3) — 3-Gap 스코어링 + 코칭 피드백 + Career 태그
 ```
 
 **Step 2 프롬프트 설계 원칙**
@@ -2219,3 +2254,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-10-14 | v3.2 | 설문 저장 형식을 기존 V/D/I 키로 환원 — 서버가 역문항을 변환한 점수를 `vulnerabilityLevel`/`dissentLevel`/`initiativeLevel`에 저장, `version` 키·v1 마이그레이션 제거 (기존 응답 0건). A.2를 단일 산출식(V/D/I 가중 40/35/25)으로 정리. |
 | 2026-10-17 | v3.3 | 5.1 요청에 `teamId`(필수, 실코드 동기화)·`title`(선택) 명시 — 제목 생략 시 기본값 `YYYY년 MM월 DD일 1on1 미팅` (기존 `1:1 Meeting YYYY-MM-DD`). 5.2 목록 응답에 `title` 추가. 5.1 응답을 실코드 기준 `{meetingId, status: "CREATED"}`로 정정 (round·overduePromises·message 삭제), `scheduledAt` 생략 시 현재 시각 → null로 정정. |
 | 2026-10-17 | v3.4 | 5.3 단일 미팅 응답에 `title` 추가. 5.2·5.3 응답 예시에서 실제로 내려가지 않는 `message` 삭제 (실코드 동기화). |
+| 2026-10-30 | v3.5 | 7.1-T `POST /meetings/{meetingId}/analyze-test` 명세 추가 — 스크립트(`[leader]`/`[member]` 라벨) 기반 분석을 202 비동기로 전환, 리더 권한 체크·Recording 저장·상태 전환 적용 (기존: 인증만, 동기, `Map` body). |

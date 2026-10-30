@@ -140,7 +140,7 @@ surveyScore = clamp(0, 100, energyLevel × 20 + Σ issue_adjustments)
 - Spring Security + JWT (jjwt 0.12+)
 - Supabase Storage (녹음 파일 임시 저장)
 - OpenAI Whisper API (STT)
-- Claude Sonnet + GPT-4o-mini (LLM Cascading)
+- Gemini (gemini-3.8-flash, OpenAI 호환 엔드포인트) — 분석 LLM
 - OpenAI Embedding API + pgvector (RAG)
 - Gradle (빌드)
 - Railway (배포)
@@ -164,7 +164,7 @@ surveyScore = clamp(0, 100, energyLevel × 20 + Σ issue_adjustments)
 - BE1이 `MockAdapter` 구현체를 `@Profile("mock")` 으로 제공
   - `MockLlmAdapter`, `MockRagAdapter` 등이 미리 정의된 Speech Act/스코어 응답을 즉시 반환
 - 5/20에 `@Profile("prod")` 로 실 AI 파이프라인 구현체로 교체
-  - `ClaudeAdapter`, `GptMiniAdapter`, `PgVectorAdapter` 활성화
+  - `ClaudeAdapter`, `GeminiAdapter`, `PgVectorAdapter` 활성화
 - `application.yml` 의 `spring.profiles.active` 만 바꾸면 전환
 
 **왜 이렇게 가는가**
@@ -233,7 +233,7 @@ src/main/java/com/readb/
 │   ├── llm/
 │   │   ├── LlmAdapter.java            (인터페이스)
 │   │   ├── ClaudeAdapter.java         (구현체)
-│   │   └── GptMiniAdapter.java        (구현체)
+│   │   └── GeminiAdapter.java         (구현체)
 │   └── rag/
 │       ├── RagAdapter.java            (인터페이스)
 │       └── PgVectorAdapter.java       (구현체 — pgvector on Supabase)
@@ -358,7 +358,7 @@ promises    (id, meeting_id, owner_id, content, deadline, status, created_at)
 
 ```
 Step 1: Whisper API → 전체 Transcript 생성
-Step 2: GPT-4o-mini (저비용) → 구조화 작업
+Step 2: Gemini (저비용) → 구조화 작업
         - Speech Act 분류 (Vulnerability / Constructive Dissent / Initiative)
         - 주제별 발화 매핑
         - Promise 추출

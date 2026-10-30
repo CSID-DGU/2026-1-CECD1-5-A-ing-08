@@ -95,6 +95,19 @@ public class MeetingService {
         analysisOrchestrator.startAnalysis(meetingId, payload);
     }
 
+    // 개발/테스트 전용 — 녹음 대신 스크립트를 받아 분석 시작
+    public void analyzeTranscript(Long meetingId, Long leaderId, String transcript, Integer durationSec) {
+        Meeting meeting = findMeeting(meetingId);
+        validateOwner(meeting, leaderId);
+        validateUploadable(meeting);
+
+        meeting.updateStatus(MeetingStatus.ANALYZING);
+        meetingRepository.save(meeting);
+        log.info("Transcript accepted. meetingId={}", meetingId);
+
+        analysisOrchestrator.startAnalysisFromTranscript(meetingId, transcript, durationSec);
+    }
+
     // 예정 시각에 진행되지 않은 미팅 취소 = 삭제. 회차는 동적 계산이라 이후 미팅 회차가 자동으로 1씩 감소한다.
     @Transactional
     public void cancelMeeting(Long meetingId, Long leaderId) {

@@ -9,6 +9,7 @@ import com.readb.dto.meeting.MeetingDetailResponse;
 import com.readb.dto.meeting.MeetingListResponse;
 import com.readb.dto.meeting.MeetingStatusResponse;
 import com.readb.dto.meeting.MemberReportResponse;
+import com.readb.dto.meeting.TranscriptAnalyzeRequest;
 import com.readb.service.analysis.AnalysisService;
 import com.readb.service.meeting.MeetingService;
 import jakarta.validation.Valid;
@@ -94,12 +95,14 @@ public class MeetingController {
         return ApiResponse.ok(meetingService.getMemberReport(meetingId, userId));
     }
 
-    // 개발/테스트 전용 — transcript를 직접 주입해서 분석 파이프라인 트리거
+    // 개발/테스트 전용 — STT 없이 스크립트로 분석 파이프라인 트리거 (202, /status 폴링)
     @PostMapping("/{meetingId}/analyze-test")
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public ApiResponse<Void> analyzeTest(
             @PathVariable Long meetingId,
-            @RequestBody java.util.Map<String, String> body) {
-        analysisService.analyze(meetingId, body.get("transcript"));
+            @AuthenticationPrincipal Long leaderId,
+            @Valid @RequestBody TranscriptAnalyzeRequest request) {
+        meetingService.analyzeTranscript(meetingId, leaderId, request.transcript(), request.durationSec());
         return ApiResponse.ok();
     }
 }

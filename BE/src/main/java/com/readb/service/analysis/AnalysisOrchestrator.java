@@ -50,27 +50,7 @@ public class AnalysisOrchestrator {
             // 2단계: STT (Whisper) — 통짜 파일 전송
             String transcript = sttAdapter.transcribe(file);
 
-            // 3단계: Recording 저장
-            Recording recording = Recording.builder()
-                    .meetingId(meetingId)
-                    .fileUrl(fileUrl)
-                    .transcript(transcript)
-                    .durationSec(payload.durationSec())
-                    .build();
-            recordingRepository.save(recording);
-
-            // 4단계: LLM 분석 → Analysis 저장
-            meeting.updateStatus(MeetingStatus.ANALYZING);
-            meetingRepository.save(meeting);
-            analysisService.analyze(meetingId, transcript);
-
-            // 5단계: 원본 파일 삭제 (보안) — fileUrl이 있을 때만 시도
-            if (fileUrl != null) {
-                tryDelete(fileUrl);
-                recording.deleteFileUrl();
-                recordingRepository.save(recording);
-            }
-
+            runFromTranscript(meeting, transcript, fileUrl, payload.durationSec());
             meeting.updateStatus(MeetingStatus.COMPLETED);
         } catch (Exception e) {
             log.error("Analysis failed for meetingId={}", meetingId, e);
@@ -80,6 +60,51 @@ public class AnalysisOrchestrator {
         }
         if (meeting != null) {
             meetingRepository.save(meeting);
+        }
+    }
+
+    // 개발/테스트 전용 — 업로드·STT 없이 전달받은 스크립트로 3단계부터 진행
+    @Async("analysisExecutor")
+    public void startAnalysisFromTranscript(Long meetingId, String transcript, Integer durationSec) {
+        Meeting meeting = null;
+        try {
+            meeting = meetingRepository.findById(meetingId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
+            runFromTranscript(meeting, transcript, null, durationSec);
+            meeting.updateStatus(MeetingStatus.COMPLETED);
+        } catch (Exception e) {
+            log.error("Transcript analysis failed for meetingId={}", meetingId, e);
+            if (meeting != null) {
+                meeting.updateStatus(MeetingStatus.FAILED);
+            }
+        }
+        if (meeting != null) {
+            meetingRepository.save(meeting);
+        }
+    }
+
+    private void runFromTranscript(Meeting meeting, String transcript, String fileUrl, Integer durationSec) {
+        Long meetingId = meeting.getId();
+
+        // 3단계: Recording 저장
+        Recording recording = Recording.builder()
+                .meetingId(meetingId)
+                .fileUrl(fileUrl)
+                .transcript(transcript)
+                .durationSec(durationSec)
+                .build();
+        recordingRepository.save(recording);
+
+        // 4단계: LLM 분석 → Analysis 저장
+        meeting.updateStatus(MeetingStatus.ANALYZING);
+        meetingRepository.save(meeting);
+        analysisService.analyze(meetingId, transcript);
+
+        // 5단계: 원본 파일 삭제 (보안) — fileUrl이 있을 때만 시도
+        if (fileUrl != null) {
+            tryDelete(fileUrl);
+            recording.deleteFileUrl();
+            recordingRepository.save(recording);
         }
     }
 

@@ -59,8 +59,8 @@ DB_PASSWORD: your-db-password
 
 JWT_SECRET: your-local-jwt-secret-min-32-chars
 
-OPENAI_API_KEY: sk-...
-CLAUDE_API_KEY: sk-ant-...
+GEMINI_API_KEY: AQ....      # 분석 LLM — Google AI Studio 발급
+OPENAI_API_KEY: sk-...      # 선택 — Whisper STT(녹음 업로드)에만 사용
 
 SUPABASE_URL: https://your-project.supabase.co
 SUPABASE_KEY: your-supabase-anon-key

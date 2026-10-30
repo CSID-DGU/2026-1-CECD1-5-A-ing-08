@@ -27,9 +27,10 @@ openai:
     url: https://api.openai.test/v1/audio/transcriptions
     model: whisper-1
     max-file-size-mb: 25
-  gpt:
-    url: https://api.openai.test/v1/chat/completions
-    model: gpt-4o-mini
+gemini:
+  api-key: test-gemini-key
+  url: https://gemini.test/v1beta/openai/chat/completions
+  model: gemini-test
 
 claude:
   api-key: test-claude-key

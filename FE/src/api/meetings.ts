@@ -107,6 +107,8 @@ export async function fetchMeetingDetail(meetingId: string): Promise<MeetingDeta
 export async function fetchPreBriefing(meetingId: string): Promise<PreBriefingData> {
   const res = await apiClient.get<ApiResponse<PreBriefingData>>(
     `/api/v1/meetings/${meetingId}/pre-briefing`,
+    // 첫 조회 시 서버가 Gemini를 최대 2회 순차 호출 — 기본 30초로는 끊김
+    { timeout: 180_000 },
   );
   return res.data.data;
 }

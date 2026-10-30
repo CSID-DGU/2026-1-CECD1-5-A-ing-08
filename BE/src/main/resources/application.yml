@@ -40,17 +40,19 @@ jwt:
   refresh-expiration-ms: 1209600000  # 14일
 
 openai:
-  api-key: ${OPENAI_API_KEY}
+  api-key: ${OPENAI_API_KEY:}   # Whisper STT 전용 — 없으면 녹음 업로드만 실패
   whisper:
     url: https://api.openai.com/v1/audio/transcriptions
     model: whisper-1
     max-file-size-mb: 25
-  gpt:
-    url: https://api.openai.com/v1/chat/completions
-    model: gpt-4o-mini
+gemini:
+  api-key: ${GEMINI_API_KEY}
+  # OpenAI 호환 엔드포인트 — 응답 형식(choices[0].message.content)이 같아 GeminiAdapter가 그대로 파싱
+  url: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+  model: gemini-3.8-flash
 
 claude:
-  api-key: ${CLAUDE_API_KEY}
+  api-key: ${CLAUDE_API_KEY:}   # ClaudeAdapter는 현재 호출처 없음
   url: https://api.anthropic.com/v1/messages
   model: claude-sonnet-4-5
   max-tokens: 4096

@@ -42,7 +42,7 @@
 <div>
   <img src="https://img.shields.io/badge/OpenAI_Whisper-412991?style=for-the-badge&logo=openai&logoColor=white"/>
   <img src="https://img.shields.io/badge/Claude_Sonnet-CC785C?style=for-the-badge&logo=anthropic&logoColor=white"/>
-  <img src="https://img.shields.io/badge/GPT--4o--mini-412991?style=for-the-badge&logo=openai&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white"/>
 </div>
 
 ## Infrastructure
@@ -62,7 +62,7 @@ ReadB — 1on1 미팅 Honesty Gap AI 분석 서비스
 
 > 리더와 멤버 사이의 1on1 미팅에서 발생하는 **표면적 답변(서베이)** 과 **대화 속 부정 징후(뉘앙스)** 사이의 간극을 AI가 분석해 조직 리스크를 조기에 감지합니다.
 
-- 미팅 녹음 → OpenAI Whisper STT → Claude Sonnet / GPT-4o-mini 분석 파이프라인
+- 미팅 녹음 → OpenAI Whisper STT → Gemini 분석 파이프라인
 - **리더 대시보드**: 레이더 차트, 블로커 분석, 약속 이행률 등 팀 건강 지표 시각화
 - **멤버 대시보드**: 개인 피드백, 성장 기록, 코칭 약속 추적
 - 사전 서베이 + 대화 뉘앙스를 결합한 이중 분석으로 Honesty Gap 수치화
@@ -75,7 +75,7 @@ ReadB — 1on1 미팅 Honesty Gap AI 분석 서비스
 | Backend | Spring Boot 3.2 + Java 17 → Railway 배포 |
 | Database | PostgreSQL (Supabase) |
 | Storage | Supabase Storage (녹음 원본 — 분석 완료 후 즉시 삭제) |
-| AI Pipeline | Whisper STT → Claude Sonnet (분석) → GPT-4o-mini (요약) |
+| AI Pipeline | Whisper STT → Gemini (분석·요약) |
 
 ## 4. 레포지토리 구조
 

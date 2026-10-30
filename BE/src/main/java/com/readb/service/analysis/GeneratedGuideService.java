@@ -15,6 +15,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 @Service
@@ -24,6 +27,9 @@ public class GeneratedGuideService {
     private final MeetingPostCoachingRepository postCoachingRepository;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
+    // 같은 가이드를 동시에 요청하면 LLM은 한 번만 호출하고 결과를 공유
+    // shortcut: 프로세스 메모리 기준이라 서버 1대에서만 중복을 막음, 다중 인스턴스 시 DB 잠금으로 교체
+    private final Map<String, CompletableFuture<Object>> inFlight = new ConcurrentHashMap<>();
 
     public GeneratedGuideService(MeetingPreBriefingRepository preBriefingRepository,
                                  MeetingPostCoachingRepository postCoachingRepository,
@@ -37,6 +43,40 @@ public class GeneratedGuideService {
 
     public <T> T getOrGeneratePre(Long meetingId, PreBriefingType type, Class<T> resultType,
                                   Supplier<T> generator) {
+        return once("pre:" + meetingId + ":" + type,
+                () -> loadOrGeneratePre(meetingId, type, resultType, generator));
+    }
+
+    public <T> T getOrGeneratePost(Long meetingId, Class<T> resultType, Supplier<T> generator) {
+        return once("post:" + meetingId, () -> loadOrGeneratePost(meetingId, resultType, generator));
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T once(String key, Supplier<T> work) {
+        CompletableFuture<Object> mine = new CompletableFuture<>();
+        CompletableFuture<Object> running = inFlight.putIfAbsent(key, mine);
+        if (running != null) {
+            try {
+                return (T) running.join();
+            } catch (CompletionException e) {
+                if (e.getCause() instanceof Error err) throw err;
+                throw e.getCause() instanceof RuntimeException re ? re : e;
+            }
+        }
+        try {
+            T result = work.get();
+            mine.complete(result);
+            return result;
+        } catch (RuntimeException | Error e) {
+            mine.completeExceptionally(e);
+            throw e;
+        } finally {
+            inFlight.remove(key, mine);
+        }
+    }
+
+    private <T> T loadOrGeneratePre(Long meetingId, PreBriefingType type, Class<T> resultType,
+                                    Supplier<T> generator) {
         var existing = preBriefingRepository.findByMeetingIdAndType(meetingId, type);
         if (existing.isPresent()) return decode(existing.get().getSchemaVersion(), existing.get().getPayload(), resultType);
 
@@ -55,7 +95,7 @@ public class GeneratedGuideService {
         }
     }
 
-    public <T> T getOrGeneratePost(Long meetingId, Class<T> resultType, Supplier<T> generator) {
+    private <T> T loadOrGeneratePost(Long meetingId, Class<T> resultType, Supplier<T> generator) {
         var existing = postCoachingRepository.findByMeetingId(meetingId);
         if (existing.isPresent()) return decode(existing.get().getSchemaVersion(), existing.get().getPayload(), resultType);
 

@@ -188,8 +188,8 @@ trendDelta = thisMonth.avg − avg(prior3MonthMeans)   // 양수: 개선, 음수
 
 ③ AI PIPELINE (LLM Cascading)
    Step 1: Whisper STT (음성 → Transcript + 화자 분리 + 타임스탬프)
-   Step 2: GPT-mini (CoT + Few-shot — Speech Act 분류 + 주제 매핑 + 약속 추출 + 발화 비율)
-   Step 3: GPT-mini (Meeting RAG — 이전 3회 Rolling Baseline 주입 + 3-Gap 스코어링 + 코칭 피드백 + Career 태그)
+   Step 2: Gemini (CoT + Few-shot — Speech Act 분류 + 주제 매핑 + 약속 추출 + 발화 비율)
+   Step 3: Gemini (Meeting RAG — 이전 3회 Rolling Baseline 주입 + 3-Gap 스코어링 + 코칭 피드백 + Career 태그)
 
 ④ 3-GAP SCORING
    Safety Score (V+D+I) + Alignment Gap + Honesty Gap + Execution Gap
@@ -264,7 +264,7 @@ BE API 응답 설계부터 FE 화면 표시까지 관통하는 핵심 원칙.
 |------|------|
 | **Backend** | Java 21 + Spring Boot 3.2 + JPA + PostgreSQL(Supabase) + JWT(jjwt 0.12+) |
 | **Frontend** | React 18 + TypeScript 5 + Vite + Tailwind + shadcn/ui + Recharts + Zustand |
-| **AI** | OpenAI Whisper(STT) + GPT-mini(구조화·스코어링, CoT+Few-shot+Meeting RAG) + OpenAI Embedding + pgvector(RAG) |
+| **AI** | OpenAI Whisper(STT) + Gemini(구조화·스코어링, CoT+Few-shot+Meeting RAG) + OpenAI Embedding + pgvector(RAG) |
 | **배포** | Railway(BE) + Vercel(FE) + Supabase(DB + Storage) |
 | **IoT** | Raspberry Pi + LED 램프 (리더 발화 타이밍 안내) |
 
@@ -272,10 +272,10 @@ BE API 응답 설계부터 FE 화면 표시까지 관통하는 핵심 원칙.
 
 ```
 Step 1: Whisper API → Transcript (화자 분리 + 타임스탬프)
-Step 2: GPT-mini (CoT + Few-shot)
+Step 2: Gemini (CoT + Few-shot)
         → Speech Act 분류 (Searle 1969 + Edmondson 1999 학술 근거)
         → 주제 매핑, Promise 추출, 발화 비율(문자수 기준)
-Step 3: GPT-mini (Meeting RAG — 이전 3회 Rolling Baseline 주입)
+Step 3: Gemini (Meeting RAG — 이전 3회 Rolling Baseline 주입)
         → 3-Gap 스코어링, 코칭 피드백(변화량 포함), Career Memory 태그
 ```
 
@@ -289,7 +289,7 @@ Step 3: GPT-mini (Meeting RAG — 이전 3회 Rolling Baseline 주입)
 모든 외부 연동은 인터페이스 → 구현체 분리. @Profile로 교체 가능.
 
 - SttAdapter → WhisperAdapter / MockSttAdapter
-- LlmAdapter → ClaudeAdapter / GptMiniAdapter / MockLlmAdapter
+- LlmAdapter → ClaudeAdapter / GeminiAdapter / MockLlmAdapter
 - RagAdapter → PgVectorAdapter
 
 ### RAG (검색 증강 생성)
