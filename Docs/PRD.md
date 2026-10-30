@@ -264,7 +264,7 @@ BE API 응답 설계부터 FE 화면 표시까지 관통하는 핵심 원칙.
 |------|------|
 | **Backend** | Java 21 + Spring Boot 3.2 + JPA + PostgreSQL(Supabase) + JWT(jjwt 0.12+) |
 | **Frontend** | React 18 + TypeScript 5 + Vite + Tailwind + shadcn/ui + Recharts + Zustand |
-| **AI** | OpenAI Whisper(STT) + Gemini(구조화·스코어링, CoT+Few-shot+Meeting RAG) + OpenAI Embedding + pgvector(RAG) |
+| **AI** | Groq Whisper-large-v3(STT) + Gemini(구조화·스코어링, CoT+Few-shot+Meeting RAG) + OpenAI Embedding + pgvector(RAG) |
 | **배포** | Railway(BE) + Vercel(FE) + Supabase(DB + Storage) |
 | **IoT** | Raspberry Pi + LED 램프 (리더 발화 타이밍 안내) |
 
@@ -288,7 +288,7 @@ Step 3: Gemini (Meeting RAG — 이전 3회 Rolling Baseline 주입)
 
 모든 외부 연동은 인터페이스 → 구현체 분리. @Profile로 교체 가능.
 
-- SttAdapter → WhisperAdapter / MockSttAdapter
+- SttAdapter → GroqWhisperAdapter / MockSttAdapter
 - LlmAdapter → ClaudeAdapter / GeminiAdapter / MockLlmAdapter
 - RagAdapter → PgVectorAdapter
 

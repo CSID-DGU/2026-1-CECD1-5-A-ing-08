@@ -60,7 +60,7 @@ DB_PASSWORD: your-db-password
 JWT_SECRET: your-local-jwt-secret-min-32-chars
 
 GEMINI_API_KEY: AQ....      # 분석 LLM — Google AI Studio 발급
-OPENAI_API_KEY: sk-...      # 선택 — Whisper STT(녹음 업로드)에만 사용
+GROQ_API_KEY: gsk_...        # 선택 — Groq Whisper STT(녹음 업로드)에만 사용
 
 SUPABASE_URL: https://your-project.supabase.co
 SUPABASE_KEY: your-supabase-anon-key
@@ -122,7 +122,7 @@ src/main/java/com/readb/
 |-----------|------|
 | 도메인 | Meeting, Recording, Analysis, Promise |
 | 서비스 | MeetingService, AnalysisOrchestrator, AnalysisService, PromiseService |
-| 어댑터 | SttAdapter, WhisperAdapter, LlmAdapter, ClaudeAdapter, GptMiniAdapter |
+| 어댑터 | SttAdapter, GroqWhisperAdapter, LlmAdapter, ClaudeAdapter, GptMiniAdapter |
 | 컨트롤러 | MeetingController, AnalysisController, LeaderController, MemberController |
 
 ### BE2 — 인증·CRUD·인프라 (준영)

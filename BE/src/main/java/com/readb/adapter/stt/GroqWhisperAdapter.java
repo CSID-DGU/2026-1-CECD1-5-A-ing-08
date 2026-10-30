@@ -23,20 +23,20 @@ import java.io.IOException;
 @Component
 @Profile("!mock")
 @RequiredArgsConstructor
-public class WhisperAdapter implements SttAdapter {
+public class GroqWhisperAdapter implements SttAdapter {
 
     private final WebClient webClient;
 
-    @Value("${openai.api-key}")
+    @Value("${groq.api-key}")
     private String apiKey;
 
-    @Value("${openai.whisper.url}")
+    @Value("${groq.whisper.url}")
     private String whisperUrl;
 
-    @Value("${openai.whisper.model}")
+    @Value("${groq.whisper.model}")
     private String model;
 
-    @Value("${openai.whisper.max-file-size-mb}")
+    @Value("${groq.whisper.max-file-size-mb}")
     private int maxFileSizeMb;
 
     @Override

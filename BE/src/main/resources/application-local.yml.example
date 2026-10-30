@@ -15,7 +15,7 @@ DB_PASSWORD: your-db-password
 JWT_SECRET: your-local-jwt-secret-min-32-chars
 
 GEMINI_API_KEY: AQ....   # Google AI Studio 발급
-OPENAI_API_KEY: sk-...
+GROQ_API_KEY: gsk_...   # Groq 발급 — Whisper STT(녹음 업로드)에만 사용
 CLAUDE_API_KEY: sk-ant-...
 
 SUPABASE_URL: https://your-project.supabase.co
