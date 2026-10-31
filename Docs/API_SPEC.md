@@ -2087,7 +2087,7 @@ export function useMeetingStatus(meetingId: number, enabled: boolean) {
 **파이프라인 구성 (v2.6 기준)**
 
 ```
-Whisper STT
+Groq Whisper STT (whisper-large-v3)
   → Gemini (Step 2) — Speech Act 분류 + 주제/블로커/약속 추출 + 발화 비율
   → Gemini (Step 3) — 3-Gap 스코어링 + 코칭 피드백 + Career 태그
 ```
@@ -2255,3 +2255,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-10-17 | v3.3 | 5.1 요청에 `teamId`(필수, 실코드 동기화)·`title`(선택) 명시 — 제목 생략 시 기본값 `YYYY년 MM월 DD일 1on1 미팅` (기존 `1:1 Meeting YYYY-MM-DD`). 5.2 목록 응답에 `title` 추가. 5.1 응답을 실코드 기준 `{meetingId, status: "CREATED"}`로 정정 (round·overduePromises·message 삭제), `scheduledAt` 생략 시 현재 시각 → null로 정정. |
 | 2026-10-17 | v3.4 | 5.3 단일 미팅 응답에 `title` 추가. 5.2·5.3 응답 예시에서 실제로 내려가지 않는 `message` 삭제 (실코드 동기화). |
 | 2026-10-30 | v3.5 | 7.1-T `POST /meetings/{meetingId}/analyze-test` 명세 추가 — 스크립트(`[leader]`/`[member]` 라벨) 기반 분석을 202 비동기로 전환, 리더 권한 체크·Recording 저장·상태 전환 적용 (기존: 인증만, 동기, `Map` body). |
+| 2026-10-31 | v3.6 | A.0 파이프라인 STT를 OpenAI `whisper-1` → Groq `whisper-large-v3`(OpenAI 호환 엔드포인트)로 교체. 환경변수 `OPENAI_API_KEY` → `GROQ_API_KEY`. API 요청·응답 형식 변경 없음. |

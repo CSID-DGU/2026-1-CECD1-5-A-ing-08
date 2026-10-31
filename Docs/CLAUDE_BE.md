@@ -139,7 +139,7 @@ surveyScore = clamp(0, 100, energyLevel × 20 + Σ issue_adjustments)
 - Spring Data JPA + PostgreSQL (Supabase)
 - Spring Security + JWT (jjwt 0.12+)
 - Supabase Storage (녹음 파일 임시 저장)
-- OpenAI Whisper API (STT)
+- Groq Whisper API (whisper-large-v3, OpenAI 호환 엔드포인트) — STT
 - Gemini (gemini-3.8-flash, OpenAI 호환 엔드포인트) — 분석 LLM
 - OpenAI Embedding API + pgvector (RAG)
 - Gradle (빌드)
@@ -229,7 +229,7 @@ src/main/java/com/readb/
 ├── adapter/                   # [BE1 전담 — BE2 절대 수정 금지]
 │   ├── stt/
 │   │   ├── SttAdapter.java            (인터페이스)
-│   │   └── WhisperAdapter.java        (구현체)
+│   │   └── GroqWhisperAdapter.java        (구현체)
 │   ├── llm/
 │   │   ├── LlmAdapter.java            (인터페이스)
 │   │   ├── ClaudeAdapter.java         (구현체)

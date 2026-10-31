@@ -21,11 +21,11 @@ cors:
     - "http://localhost:3000"
     - "http://localhost:5173"
 
-openai:
-  api-key: test-openai-key
+groq:
+  api-key: test-groq-key
   whisper:
-    url: https://api.openai.test/v1/audio/transcriptions
-    model: whisper-1
+    url: https://api.groq.test/openai/v1/audio/transcriptions
+    model: whisper-large-v3
     max-file-size-mb: 25
 gemini:
   api-key: test-gemini-key

@@ -39,11 +39,11 @@ jwt:
   access-expiration-ms: 3600000      # 1시간
   refresh-expiration-ms: 1209600000  # 14일
 
-openai:
-  api-key: ${OPENAI_API_KEY:}   # Whisper STT 전용 — 없으면 녹음 업로드만 실패
+groq:
+  api-key: ${GROQ_API_KEY:}   # Groq Whisper STT 전용 — 없으면 녹음 업로드만 실패
   whisper:
-    url: https://api.openai.com/v1/audio/transcriptions
-    model: whisper-1
+    url: https://api.groq.com/openai/v1/audio/transcriptions
+    model: whisper-large-v3
     max-file-size-mb: 25
 gemini:
   api-key: ${GEMINI_API_KEY}
