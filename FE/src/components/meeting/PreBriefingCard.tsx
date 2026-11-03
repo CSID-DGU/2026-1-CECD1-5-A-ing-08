@@ -4,6 +4,9 @@ import type { PendingPromise, PreBriefingData } from '@/types/meeting';
 
 interface Props {
   data: PreBriefingData;
+  topicLoading?: boolean;
+  topicError?: boolean;
+  onRetryTopic?: () => void;
 }
 
 interface CoachingGuideViewModel {
@@ -171,7 +174,7 @@ function ActionItems({ items }: { items: PendingPromise[] }) {
   );
 }
 
-export default function PreBriefingCard({ data }: Props) {
+export default function PreBriefingCard({ data, topicLoading, topicError, onRetryTopic }: Props) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const guide = data.coachingGuide ?? buildFallbackGuide(data);
   const focusBoxStyles = getFocusAreaBoxStyles(guide.focusArea);
@@ -260,6 +263,13 @@ export default function PreBriefingCard({ data }: Props) {
             {surveyTopics.map(({ topic, questions }, index) => (
               <div key={`${topic}-${index}`} className="py-3 first:pt-0 last:pb-0">
                 <p className="text-sm font-semibold text-gray-900">{topic}</p>
+                {topicLoading && <p className="mt-2 text-sm text-gray-500" role="status">질문을 준비하고 있어요…</p>}
+                {topicError && (
+                  <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+                    <span>질문을 생성하지 못했어요.</span>
+                    <button type="button" onClick={onRetryTopic} className="text-[#5F74FA]">다시 시도</button>
+                  </div>
+                )}
                 {questions.length > 0 && (
                   <div className="mt-2 flex flex-col gap-2">
                     {questions.map((question, questionIndex) => (
