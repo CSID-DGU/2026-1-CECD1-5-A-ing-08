@@ -113,6 +113,20 @@ export async function fetchPreBriefing(meetingId: string): Promise<PreBriefingDa
   return res.data.data;
 }
 
+export async function fetchPreBriefingGuide(meetingId: string): Promise<NonNullable<PreBriefingData['coachingGuide']> | null> {
+  const res = await apiClient.get<ApiResponse<NonNullable<PreBriefingData['coachingGuide']> | null>>(
+    `/api/v1/meetings/${meetingId}/pre-briefing/guide`, { timeout: 180_000 },
+  );
+  return res.data.data;
+}
+
+export async function fetchPreBriefingTopicQuestions(meetingId: string): Promise<PreBriefingData['surveyTopicQuestion']> {
+  const res = await apiClient.get<ApiResponse<PreBriefingData['surveyTopicQuestion']>>(
+    `/api/v1/meetings/${meetingId}/pre-briefing/topic-questions`, { timeout: 180_000 },
+  );
+  return res.data.data;
+}
+
 export async function fetchMemberReport(meetingId: string): Promise<MemberReportData> {
   const res = await apiClient.get<ApiResponse<MemberReportData>>(
     `/api/v1/meetings/${meetingId}/member-report`,

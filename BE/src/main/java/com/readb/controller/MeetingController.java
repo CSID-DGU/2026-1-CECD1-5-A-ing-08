@@ -83,6 +83,16 @@ public class MeetingController {
         return ApiResponse.ok(analysisService.getPreBriefing(meetingId));
     }
 
+    @GetMapping("/{meetingId}/pre-briefing/guide")
+    public ApiResponse<PreBriefingResponse.CoachingGuide> getPreBriefingGuide(@PathVariable Long meetingId) {
+        return ApiResponse.ok(analysisService.getPreBriefingGuide(meetingId));
+    }
+
+    @GetMapping("/{meetingId}/pre-briefing/topic-questions")
+    public ApiResponse<PreBriefingResponse.SurveyTopicQuestion> getPreBriefingTopicQuestions(@PathVariable Long meetingId) {
+        return ApiResponse.ok(analysisService.getPreBriefingTopicQuestions(meetingId));
+    }
+
     @GetMapping("/{meetingId}/leader-report")
     public ApiResponse<AnalysisResultResponse> getLeaderReport(@PathVariable Long meetingId) {
         return ApiResponse.ok(analysisService.getResult(meetingId));

@@ -947,26 +947,39 @@ public class AnalysisService {
         List<String> recommendedTopics = buildRecommendedTopics(pendingPromises, lastMeeting, survey);
 
         // 코칭 가이드 (Gemini 생성)
-        PreBriefingResponse.LastMeetingSummary guideLastMeeting = lastMeeting;
-        List<PreBriefingResponse.PendingPromise> guidePromises = pendingPromises;
-        PreBriefingResponse.CoachingGuide coachingGuide = generatedGuideService.getOrGeneratePre(
-                meetingId, PreBriefingType.BASE, PreBriefingResponse.CoachingGuide.class,
-                () -> buildCoachingGuide(member.getName(), guideLastMeeting, guidePromises,
-                        prevMeetings, meeting.getMemberId()));
+        PreBriefingResponse.CoachingGuide coachingGuide = null;
 
         PreBriefingResponse.SurveyTopicQuestion surveyTopicQuestion = null;
-        if (survey.submitted() && survey.topic() != null && !survey.topic().isBlank()) {
-            String topic = survey.topic().trim();
-            surveyTopicQuestion = generatedGuideService.getOrGeneratePre(
-                    meetingId, PreBriefingType.SURVEY_TOPIC,
-                    PreBriefingResponse.SurveyTopicQuestion.class,
-                    () -> buildSurveyTopicQuestion(topic, meeting.getMemberId()));
-        }
+        // Generated content is fetched separately so stored data can be shown immediately.
 
         String scheduledAt = meeting.getScheduledAt() != null ? meeting.getScheduledAt().toString() : null;
         return new PreBriefingResponse(meetingId, round, member.getName(), member.getJobTitle(),
                 scheduledAt, survey, lastMeeting, pendingPromises, recommendedTopics, coachingGuide,
                 surveyTopicQuestion);
+    }
+
+    public PreBriefingResponse.CoachingGuide getPreBriefingGuide(Long meetingId) {
+        PreBriefingResponse briefing = getPreBriefing(meetingId);
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
+        List<Meeting> previous = meetingRepository
+                .findByLeaderIdAndMemberIdOrderByCreatedAtDesc(meeting.getLeaderId(), meeting.getMemberId())
+                .stream().filter(m -> m.getId() < meetingId).toList();
+        return generatedGuideService.getOrGeneratePre(meetingId, PreBriefingType.BASE,
+                PreBriefingResponse.CoachingGuide.class,
+                () -> buildCoachingGuide(briefing.memberName(), briefing.lastMeeting(),
+                        briefing.pendingPromises(), previous, meeting.getMemberId()));
+    }
+
+    public PreBriefingResponse.SurveyTopicQuestion getPreBriefingTopicQuestions(Long meetingId) {
+        PreBriefingResponse briefing = getPreBriefing(meetingId);
+        String topic = briefing.survey().topic();
+        if (!briefing.survey().submitted() || topic == null || topic.isBlank()) return null;
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
+        return generatedGuideService.getOrGeneratePre(meetingId, PreBriefingType.SURVEY_TOPIC,
+                PreBriefingResponse.SurveyTopicQuestion.class,
+                () -> buildSurveyTopicQuestion(topic.trim(), meeting.getMemberId()));
     }
 
     private String computeQuadrant(Double safetyScore, Double surveyScore) {
