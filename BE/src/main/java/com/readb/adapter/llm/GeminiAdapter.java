@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+
 
 import java.util.List;
 import java.util.Map;
@@ -55,6 +57,10 @@ public class GeminiAdapter implements LlmAdapter {
             log.info("Gemini 응답 수신. 길이: {}", result.length());
             return result;
 
+        } catch (WebClientResponseException e) {
+            log.error("Gemini 오류: status={}, body={}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            throw new BusinessException(ErrorCode.ANALYSIS_FAILED);
         } catch (Exception e) {
             log.error("Gemini API 호출 실패", e);
             throw new BusinessException(ErrorCode.ANALYSIS_FAILED);
