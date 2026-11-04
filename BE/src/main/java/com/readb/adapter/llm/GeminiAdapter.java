@@ -31,8 +31,20 @@ public class GeminiAdapter implements LlmAdapter {
     @Value("${gemini.model}")
     private String model;
 
+    @Value("${gemini.pre-meeting-model}")
+    private String preMeetingModel;
+
     @Override
     public String chat(String systemPrompt, String userPrompt) {
+        return chat(model, systemPrompt, userPrompt);
+    }
+
+    /** 미팅 전 pre-briefing(코칭 가이드·사전 질문 추천)용 경량 모델 호출 */
+    public String chatPreMeeting(String systemPrompt, String userPrompt) {
+        return chat(preMeetingModel, systemPrompt, userPrompt);
+    }
+
+    private String chat(String model, String systemPrompt, String userPrompt) {
         Map<String, Object> requestBody = Map.of(
                 "model", model,
                 "messages", List.of(
