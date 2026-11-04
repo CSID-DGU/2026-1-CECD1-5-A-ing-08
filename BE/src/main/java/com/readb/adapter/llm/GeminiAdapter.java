@@ -9,8 +9,9 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.util.retry.Retry;
 
-
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +50,10 @@ public class GeminiAdapter implements LlmAdapter {
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(Map.class)
+                    // Gemini 과부하(503)는 일시적이라 짧게 재시도 — 사전 브리핑은 동기 요청이라 대기를 길게 두지 않는다
+                    .retryWhen(Retry.backoff(2, Duration.ofSeconds(1))
+                            .filter(e -> e instanceof WebClientResponseException.ServiceUnavailable)
+                            .onRetryExhaustedThrow((spec, signal) -> signal.failure()))
                     .block();
 
             List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");

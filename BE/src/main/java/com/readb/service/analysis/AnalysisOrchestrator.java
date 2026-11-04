@@ -86,7 +86,8 @@ public class AnalysisOrchestrator {
     private void runFromTranscript(Meeting meeting, String transcript, String fileUrl, Integer durationSec) {
         Long meetingId = meeting.getId();
 
-        // 3단계: Recording 저장
+        // 3단계: Recording 저장 — 이전 시도가 실패해 남은 행이 있으면 meeting_id unique 충돌이 나므로 먼저 지운다
+        recordingRepository.findByMeetingId(meetingId).ifPresent(recordingRepository::delete);
         Recording recording = Recording.builder()
                 .meetingId(meetingId)
                 .fileUrl(fileUrl)
