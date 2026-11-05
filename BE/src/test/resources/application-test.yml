@@ -31,6 +31,7 @@ gemini:
   api-key: test-gemini-key
   url: https://gemini.test/v1beta/openai/chat/completions
   model: gemini-test
+  pre-meeting-model: gemini-test
 
 claude:
   api-key: test-claude-key

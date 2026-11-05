@@ -1,6 +1,7 @@
 package com.readb.service.analysis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.readb.adapter.llm.GeminiAdapter;
 import com.readb.adapter.llm.LlmAdapter;
 import com.readb.domain.analysis.Analysis;
 import com.readb.domain.meeting.Meeting;
@@ -67,7 +68,7 @@ class MemberAnalyticsServiceTest {
                 mock(TeamCoachingCacheRepository.class),
                 mock(TeamBlockerCacheRepository.class),
                 mock(GeneratedGuideService.class),
-                mock(LlmAdapter.class),
+                mock(GeminiAdapter.class),
                 mock(LlmAdapter.class),
                 new ObjectMapper(),
                 mock(PlatformTransactionManager.class)
