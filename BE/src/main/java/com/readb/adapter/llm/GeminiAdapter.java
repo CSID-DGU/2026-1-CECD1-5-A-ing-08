@@ -62,8 +62,8 @@ public class GeminiAdapter implements LlmAdapter {
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(Map.class)
-                    // Gemini 과부하(503)는 일시적이라 짧게 재시도 — 사전 브리핑은 동기 요청이라 대기를 길게 두지 않는다
-                    .retryWhen(Retry.backoff(2, Duration.ofSeconds(1))
+                    // Gemini 과부하(503)는 일시적이라 1회만 재시도 — 503 응답 자체가 수십 초 걸려, 동기 요청인 사전 브리핑 대기가 길어지지 않게 한다
+                    .retryWhen(Retry.backoff(1, Duration.ofSeconds(1))
                             .filter(e -> e instanceof WebClientResponseException.ServiceUnavailable)
                             .onRetryExhaustedThrow((spec, signal) -> signal.failure()))
                     .block();
