@@ -106,9 +106,11 @@ public class AnalysisService {
                제외: 사교적 겸손("아이고 별거 아닙니다"), 관용표현("죄송하지만 화면 공유 좀")
 
             2. constructiveDissent (Assertive Act — 사실/믿음에 대한 주장)
-               정의: 리더나 기존 방향에 대해 근거를 들어 다른 의견을 제시하는 행위
-               포함: "다른 의견인데요", "그 방법보다는 이게 낫다고 봐요"
-               제외: 단순 불만("이건 왜 이래요"), 인신공격, 감정적 반발
+               정의: 리더의 제안, 기존 방향, 현재 방식에 대해 다른 관점·우려·대안을 꺼내는 행위
+                     (근거가 짧거나 맥락상 암묵적이어도 포함)
+               포함: "다른 의견인데요", "그 방법보다는 이게 낫다고 봐요", "한 가지 우려가 있는데요",
+                     "그건 일정상 어려울 것 같은데, ~하면 어떨까요", "제 생각은 조금 다른데요"
+               제외: 이유나 대안 없이 감정만 드러내는 불만("이건 왜 이래요"), 인신공격, 감정적 반발
 
             3. initiative (Commissive Act — 미래 행동에 대한 자발적 제안)
                정의: 지시 없이 자발적으로 새로운 행동이나 아이디어를 제안하는 행위
@@ -462,7 +464,7 @@ public class AnalysisService {
             sb.append("최근 ").append(context.meetingCount()).append("회 미팅 평균:\n");
             sb.append("- Safety Score 평균: ").append(String.format(java.util.Locale.US, "%.1f", context.avgSafetyScore())).append("\n");
             sb.append("- Vulnerability 평균: ").append(String.format(java.util.Locale.US, "%.1f", context.avgVulnerability())).append("회\n");
-            sb.append("- Constructive Dissent 평균: ").append(String.format(java.util.Locale.US, "%.1f", context.avgDissent())).append("회\n");
+            sb.append("- Constructive Dissent 평균: ").append(String.format(java.util.Locale.US, "%.1f", context.avgConstructiveDissent())).append("회\n");
             sb.append("- Initiative 평균: ").append(String.format(java.util.Locale.US, "%.1f", context.avgInitiative())).append("회\n");
             if (!context.prevBlockers().isEmpty()) {
                 sb.append("- 이전 블로커: ").append(String.join(", ", context.prevBlockers())).append("\n");
@@ -509,7 +511,7 @@ public class AnalysisService {
 
     record MeetingContext(
             int meetingCount, double avgSafetyScore,
-            double avgVulnerability, double avgDissent, double avgInitiative,
+            double avgVulnerability, double avgConstructiveDissent, double avgInitiative,
             List<String> prevBlockers) {
         static MeetingContext empty() {
             return new MeetingContext(0, 0, 0, 0, 0, List.of());
@@ -791,7 +793,7 @@ public class AnalysisService {
         Map<String, Object> baseline = a.getBaselineData();
         return new SpeechActsResponse(
                 buildSpeechActDetail(acts, "vulnerability", baseline, "prev_avg_vulnerability"),
-                buildSpeechActDetail(acts, "constructiveDissent", baseline, "prev_avg_dissent"),
+                buildSpeechActDetail(acts, "constructiveDissent", baseline, "prev_avg_constructiveDissent"),
                 buildSpeechActDetail(acts, "initiative", baseline, "prev_avg_initiative"));
     }
 
@@ -1000,7 +1002,7 @@ public class AnalysisService {
         if (speechActs == null) return List.of();
         List<String> alerts = new ArrayList<>();
         String[] keys = {"vulnerability", "constructiveDissent", "initiative"};
-        String[] baselineKeys = {"prev_avg_vulnerability", "prev_avg_dissent", "prev_avg_initiative"};
+        String[] baselineKeys = {"prev_avg_vulnerability", "prev_avg_constructiveDissent", "prev_avg_initiative"};
         String[] labels = {"Vulnerability", "Constructive Dissent", "Initiative"};
         for (int i = 0; i < keys.length; i++) {
             Object raw = speechActs.get(keys[i]);
@@ -2096,7 +2098,7 @@ public class AnalysisService {
                             m.getId(),
                             m.getScheduledAt(),
                             countSpeechAct(acts, "vulnerability"),
-                            countSpeechAct(acts, "dissent"),
+                            countSpeechAct(acts, "constructiveDissent"),
                             countSpeechAct(acts, "initiative")
                     );
                 })

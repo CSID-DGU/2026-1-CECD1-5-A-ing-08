@@ -2256,3 +2256,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-10-17 | v3.4 | 5.3 단일 미팅 응답에 `title` 추가. 5.2·5.3 응답 예시에서 실제로 내려가지 않는 `message` 삭제 (실코드 동기화). |
 | 2026-10-30 | v3.5 | 7.1-T `POST /meetings/{meetingId}/analyze-test` 명세 추가 — 스크립트(`[leader]`/`[member]` 라벨) 기반 분석을 202 비동기로 전환, 리더 권한 체크·Recording 저장·상태 전환 적용 (기존: 인증만, 동기, `Map` body). |
 | 2026-10-31 | v3.6 | A.0 파이프라인 STT를 OpenAI `whisper-1` → Groq `whisper-large-v3`(OpenAI 호환 엔드포인트)로 교체. 환경변수 `OPENAI_API_KEY` → `GROQ_API_KEY`. API 요청·응답 형식 변경 없음. |
+| 2026-11-06 | v3.7 | `GET /members/me/speech-trend`(명세 외, v2.4에서 제거된 엔드포인트) 응답 필드 `dissentCount` → `constructiveDissentCount`. 집계 키를 `"dissent"` → `"constructiveDissent"`로 바로잡아 D 횟수가 항상 0이던 버그 수정. 내부 baseline 키 `prev_avg_dissent` → `prev_avg_constructiveDissent`. |

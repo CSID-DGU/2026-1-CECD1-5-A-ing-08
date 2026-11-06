@@ -6,6 +6,6 @@ public record SpeechTrendResponse(
         Long meetingId,
         LocalDateTime scheduledAt,
         int vulnerabilityCount,
-        int dissentCount,
+        int constructiveDissentCount,
         int initiativeCount
 ) {}

@@ -317,11 +317,11 @@ recordings  (id, meeting_id, file_url, duration_sec, transcript TEXT, created_at
 analyses    (id, meeting_id,
             alignment_gap FLOAT, honesty_gap FLOAT, execution_gap FLOAT,
             safety_score FLOAT,
-            speech_acts JSONB,       -- {vulnerability: [{text, timestamp}], dissent: [...], initiative: [...]}
+            speech_acts JSONB,       -- {vulnerability: [{text, timestamp}], constructiveDissent: [...], initiative: [...]}
             blocker_keywords JSONB,
             leader_feedback JSONB, member_feedback JSONB,
             career_tags JSONB,
-            baseline_data JSONB,     -- {prev_avg_vulnerability, prev_avg_dissent, prev_avg_initiative}
+            baseline_data JSONB,     -- {prev_avg_vulnerability, prev_avg_constructiveDissent, prev_avg_initiative}
             created_at)
 promises    (id, meeting_id, owner_id, content, deadline, status, created_at)
 
