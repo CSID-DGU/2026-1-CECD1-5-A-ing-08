@@ -141,7 +141,7 @@ class MemberAnalyticsServiceTest {
         Meeting m = meeting(1L, t1);
         Map<String, Object> acts = Map.of(
                 "vulnerability", List.of(Map.of("text", "a"), Map.of("text", "b")),
-                "dissent", List.of(Map.of("text", "c")),
+                "constructiveDissent", List.of(Map.of("text", "c")),
                 "initiative", List.of()
         );
         Analysis a = analysis(1L, List.of(), acts, 60.0);
@@ -154,7 +154,7 @@ class MemberAnalyticsServiceTest {
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).vulnerabilityCount()).isEqualTo(2);
-        assertThat(result.getContent().get(0).dissentCount()).isEqualTo(1);
+        assertThat(result.getContent().get(0).constructiveDissentCount()).isEqualTo(1);
         assertThat(result.getContent().get(0).initiativeCount()).isEqualTo(0);
     }
 
