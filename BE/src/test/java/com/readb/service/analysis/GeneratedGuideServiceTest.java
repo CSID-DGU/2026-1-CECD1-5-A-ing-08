@@ -3,10 +3,12 @@ package com.readb.service.analysis;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.readb.domain.analysis.PreBriefingType;
 import com.readb.dto.meeting.PreBriefingResponse.CoachingGuide;
+import com.readb.dto.meeting.PreBriefingResponse.SurveyTopicQuestion;
 import com.readb.repository.MeetingPostCoachingRepository;
 import com.readb.repository.MeetingPreBriefingRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +23,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class GeneratedGuideServiceTest {
+
+    @Test
+    void 무효_주제의_빈_질문_결과는_유효하다() {
+        GeneratedGuideService service = new GeneratedGuideService(
+                mock(MeetingPreBriefingRepository.class), mock(MeetingPostCoachingRepository.class),
+                new ObjectMapper(), mock(PlatformTransactionManager.class));
+        boolean valid = ReflectionTestUtils.invokeMethod(service, "isValid",
+                new SurveyTopicQuestion(null, List.of()));
+        assertThat(valid).isTrue();
+    }
 
     @Test
     void 동시에_같은_가이드를_요청하면_LLM은_한_번만_호출된다() throws Exception {
