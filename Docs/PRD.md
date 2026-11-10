@@ -1,6 +1,6 @@
 # ReadB PRD (Product Requirements Document)
 
-> **버전**: v2.8 | **최종 업데이트**: 2026-06-15 | **작성**: PM 이승규
+> **버전**: v2.9 | **최종 업데이트**: 2026-11-10 | **작성**: PM 이승규
 
 ---
 
@@ -170,7 +170,8 @@ trendDelta = thisMonth.avg − avg(prior3MonthMeans)   // 양수: 개선, 음수
 
 ### 3.6 1on1 소통 균형 (발화 비율)
 
-- GPT가 대화 전사 텍스트의 문자수 기준으로 리더/멤버 발화 비율 추출
+- 사후 분석: Gemini(Step 2)가 대화 전사 텍스트의 문자수 기준으로 리더/멤버 발화 비율 추출
+- 실시간(IoT): 미팅 시작 시 리더/멤버 음성으로 보정한 뒤, 오디오 청크의 음량(RMS) 분포로 화자를 구분해 리더 비율을 SSE로 전송 (`/talk-ratio/stream`)
 - 팀 대시보드에 멤버별 최신 1on1 발화 비율을 leaderRatio 내림차순으로 표시
 - 상태 기준: `위험` (leaderRatio ≥ 70%) / `관찰` (50–69%) / `적정` (< 50%)
 - 리포트 화면에도 실제 측정 발화 비율 및 권장 비율(40%) 마커 표시
@@ -187,7 +188,7 @@ trendDelta = thisMonth.avg − avg(prior3MonthMeans)   // 양수: 개선, 음수
    Ambient 녹음 (별도 조작 없음) → 미팅 종료 후 통짜 업로드
 
 ③ AI PIPELINE (LLM Cascading)
-   Step 1: Whisper STT (음성 → Transcript + 화자 분리 + 타임스탬프)
+   Step 1: Groq Whisper STT (음성 → Transcript segment + 타임스탬프, 화자 분리 없음)
    Step 2: Gemini (CoT + Few-shot — Speech Act 분류 + 주제 매핑 + 약속 추출 + 발화 비율)
    Step 3: Gemini (Meeting RAG — 이전 3회 Rolling Baseline 주입 + 3-Gap 스코어링 + 코칭 피드백 + Career 태그)
 
@@ -262,16 +263,16 @@ BE API 응답 설계부터 FE 화면 표시까지 관통하는 핵심 원칙.
 
 | 영역 | 기술 |
 |------|------|
-| **Backend** | Java 21 + Spring Boot 3.2 + JPA + PostgreSQL(Supabase) + JWT(jjwt 0.12+) |
-| **Frontend** | React 18 + TypeScript 5 + Vite + Tailwind + shadcn/ui + Recharts + Zustand |
-| **AI** | Groq Whisper-large-v3(STT) + Gemini(구조화·스코어링, CoT+Few-shot+Meeting RAG) + OpenAI Embedding + pgvector(RAG) |
+| **Backend** | Java 17 + Spring Boot 3.2 + JPA + PostgreSQL(Supabase) + JWT(jjwt 0.12+) |
+| **Frontend** | React 18 + TypeScript 5 + Vite + Tailwind + 자체 UI 컴포넌트(`components/ui`) + Recharts + Zustand |
+| **AI** | Groq Whisper-large-v3(STT) + Gemini 3.5 Flash Lite(분석·스코어링·코칭, CoT+Few-shot+Meeting RAG) + Gemini 3.1 Flash Lite(사전 브리핑·추천 질문) |
 | **배포** | Railway(BE) + Vercel(FE) + Supabase(DB + Storage) |
-| **IoT** | Raspberry Pi + LED 램프 (리더 발화 타이밍 안내) |
+| **IoT** | ESP32 + LED 램프 (`BE/arduino/`, 리더 발화 비율 실시간 안내) |
 
 ### LLM Cascading
 
 ```
-Step 1: Whisper API → Transcript (화자 분리 + 타임스탬프)
+Step 1: Groq Whisper API → Transcript (segment별 타임스탬프, 화자는 Step 2에서 판별)
 Step 2: Gemini (CoT + Few-shot)
         → Speech Act 분류 (Searle 1969 + Edmondson 1999 학술 근거)
         → 주제 매핑, Promise 추출, 발화 비율(문자수 기준)
@@ -286,20 +287,18 @@ Step 3: Gemini (Meeting RAG — 이전 3회 Rolling Baseline 주입)
 
 ### Adapter Pattern
 
-모든 외부 연동은 인터페이스 → 구현체 분리. @Profile로 교체 가능.
+모든 외부 연동은 인터페이스 → 구현체 분리.
 
-- SttAdapter → GroqWhisperAdapter / MockSttAdapter
-- LlmAdapter → ClaudeAdapter / GeminiAdapter / MockLlmAdapter
-- RagAdapter → PgVectorAdapter
+- SttAdapter → GroqWhisperAdapter(`!mock`) / MockSttAdapter(`mock` 프로필) — @Profile로 교체
+- LlmAdapter → GeminiAdapter (사용 중) / ClaudeAdapter (구현만 존재, 현재 호출 없음) — @Qualifier로 주입
 
-### RAG (검색 증강 생성)
+### Meeting RAG (프롬프트 컨텍스트 주입)
 
-코칭 피드백 생성 시 3가지 지식 소스를 참조:
-1. 코칭 프레임워크 지식베이스 (SBI, GROW 모델 등)
-2. 해당 멤버 과거 미팅 요약 (최근 3~5회)
-3. 팀 컨텍스트 (팀 평균 지표, 자주 등장하는 blocker 키워드)
+별도 벡터 DB·임베딩 없이, Step 3 프롬프트에 DB에서 조회한 컨텍스트를 직접 주입한다:
+1. 해당 멤버 직전 3회 미팅의 Rolling Baseline (Safety Score, V/D/I 평균, 블로커 키워드)
+2. 이전 미팅의 약속(Promise) 목록 — Execution Gap 산출용
 
-기술: pgvector on Supabase (별도 벡터 DB 불필요)
+코칭 프레임워크 지식베이스, pgvector 검색은 미구현 (향후 과제).
 
 ---
 
@@ -446,7 +445,9 @@ LED 램프를 통한 리더 발화 타이밍 실시간 안내.
 
 - [ ] 리더 코칭 스코어 (경청지수 + 촉진지수 + 이행지수) — MVP 이후 레이어
 - [ ] 구글 OAuth 로그인 연동 — 자체 인증 완성 후
-- [ ] IoT 램프 실물 연동 — WithUs 대회용
+- [ ] IoT 램프 실물 연동 — WithUs 대회용 (ESP32 펌웨어·SSE 연동은 구현됨)
+- [ ] 실시간 발화 비율 화자 분리 정확도 개선 (현재 음량 RMS만 사용)
+- [ ] pgvector 기반 RAG (코칭 프레임워크 지식베이스)
 - [ ] 퇴사 예측 모델 학습 — 6개월+ 데이터 축적 후
 - [ ] 멀티테넌트 / 조직 관리 기능
 - [ ] 녹음 동의 프로세스 / 개인정보 처리 법적 검토
@@ -467,3 +468,4 @@ LED 램프를 통한 리더 발화 타이밍 실시간 안내.
 | 2026-06-11 | v2.6 | Safety Score 재보정 (기준선 40, 최대 보너스 V+24/D+21/I+15, recall-first 분류), 사분면 임계값 50→45, 팀 헬스 trendDelta+statusNote 추가, 리더 화면 멤버 상세 페이지·내 미팅 기록 필터 추가, 멤버 화면 프로필 수정 추가, `GET /members/{memberId}/insight` 엔드포인트 추가, Career Stats 필드 변경 (leaderEndorsementCount/contributionPercentile → promiseFulfillmentRate/completedActionCount) |
 | 2026-06-12 | v2.7 | 리더 화면 "팀 대시보드" 업데이트 — "1on1 소통 균형" → "팀 멤버 상태" (safetyScore 바 + 사분면 배지), 이상 탐지 알림 제거, 약속 리마인더 배너 추가. "나의 리더십 성장" 화면 신규 추가 (발화비율·안전감·1on1빈도 추이, 코칭실행률, 멤버별 마지막 1on1, keyInsight). Promise Ledger 구조 변경 — 리더 약속 최상단 + partnerName + "리더"/"멤버" 태그. 멤버 상세 소통 참여도에서 레벨 라벨 제거. Safety Score 결정론적 서버 계산으로 전환 (LLM 숫자 미사용). 레이더 사분면 버그 수정 — 분석 완료된 가장 최근 미팅 기준으로 멤버 선택. 기술 스택 Java 17 → Java 21. 신규 엔드포인트: GET /leaders/me/growth, GET /promises/reminders, PATCH /promises/{id}/complete, GET /teams/{id}/promises/summary |
 | 2026-06-15 | v2.8 | **미팅 진행 화면 인-미팅 체크리스트** 신규 — 해당 멤버의 미완료 액션 플랜·미이행 약속을 회차별 그룹(직전 미팅 최상단 펼침 + 나머지 접기/펼치기)으로 체크박스 on/off 제공, 미팅별 로컬 노트. **미팅 취소** 기능 — 진행 전(CREATED) 미팅을 목록에서 취소(삭제), 회차 동적 재계산으로 이후 회차 자동 감소 (`DELETE /meetings/{id}`). **멤버 화면 정리** — '1on1 미팅' 목록은 리더와의 1on1만(셀프 미팅 제외), 팀 단위 패널('1on1 멤버'·'액션 아이템') 숨김. **멤버 Career Memory에 회차별 약속** 섹션 추가(체크박스). **서베이 멤버 전용 제출**(타인 제출 403) + 대시보드/레이더/인사이트 집계에서 미팅 멤버 본인 서베이만 사용(중복키 500 수정). **약속 상태 토글**을 1on1 참여자(리더 또는 멤버)로 확대 + 완료 해제 엔드포인트(`PATCH /promises/{id}/incomplete`). 멤버 인사이트 회차 계산에서 셀프 미팅 제외(미팅 목록 회차와 일치). 미팅 단건 응답에 memberId 추가 |
+| 2026-11-10 | v2.9 | 실코드 기준 정정 — Java 21 → 17, STT는 Groq Whisper(화자 분리 없음, Step 2에서 판별), Gemini 모델 용도별 분리(분석 3.5 Flash Lite / 사전 브리핑 3.1 Flash Lite), 발화 비율 산출 주체 GPT → Gemini + 실시간 RMS 경로 명시, IoT Raspberry Pi → ESP32, shadcn/ui → 자체 UI 컴포넌트, pgvector·Embedding·MockLlmAdapter·RagAdapter 미구현 표기, ClaudeAdapter 미사용 표기 |
