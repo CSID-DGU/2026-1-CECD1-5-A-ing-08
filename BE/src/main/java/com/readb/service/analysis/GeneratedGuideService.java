@@ -127,8 +127,7 @@ public class GeneratedGuideService {
                             .equals(guide.suggestedQuestions().get(1).trim());
         }
         if (result instanceof PreBriefingResponse.SurveyTopicQuestion question) {
-            return question.questions() != null && !question.questions().isEmpty()
-                    && question.questions().size() <= 2
+            return question.questions() != null && question.questions().size() <= 2
                     && question.questions().stream().allMatch(item ->
                             hasText(item.topic()) && hasText(item.question()))
                     && question.questions().stream().map(item -> item.question().trim()).distinct().count()
