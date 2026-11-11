@@ -9,6 +9,7 @@ import com.readb.dto.analysis.AnalysisResultResponse;
 import com.readb.dto.meeting.PreBriefingResponse;
 import com.readb.repository.MeetingPostCoachingRepository;
 import com.readb.repository.MeetingPreBriefingRepository;
+import com.readb.repository.SurveyRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -24,6 +25,7 @@ import java.util.function.Supplier;
 public class GeneratedGuideService {
     private static final int SCHEMA_VERSION = 1;
     private final MeetingPreBriefingRepository preBriefingRepository;
+    private final SurveyRepository surveyRepository;
     private final MeetingPostCoachingRepository postCoachingRepository;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
@@ -32,10 +34,12 @@ public class GeneratedGuideService {
     private final Map<String, CompletableFuture<Object>> inFlight = new ConcurrentHashMap<>();
 
     public GeneratedGuideService(MeetingPreBriefingRepository preBriefingRepository,
+                                 SurveyRepository surveyRepository,
                                  MeetingPostCoachingRepository postCoachingRepository,
                                  ObjectMapper objectMapper,
                                  PlatformTransactionManager transactionManager) {
         this.preBriefingRepository = preBriefingRepository;
+        this.surveyRepository = surveyRepository;
         this.postCoachingRepository = postCoachingRepository;
         this.objectMapper = objectMapper;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
@@ -49,6 +53,31 @@ public class GeneratedGuideService {
 
     public <T> T getOrGeneratePost(Long meetingId, Class<T> resultType, Supplier<T> generator) {
         return once("post:" + meetingId, () -> loadOrGeneratePost(meetingId, resultType, generator));
+    }
+
+    public PreBriefingResponse.SurveyTopicQuestion getStoredSurveyTopic(Long meetingId, String topic) {
+        return preBriefingRepository.findByMeetingIdAndType(meetingId, PreBriefingType.SURVEY_TOPIC)
+                .map(row -> decode(row.getSchemaVersion(), row.getPayload(), PreBriefingResponse.SurveyTopicQuestion.class))
+                .filter(result -> result.questions() != null && !result.questions().isEmpty()
+                        && result.questions().stream().allMatch(question -> topic.equals(question.topic())))
+                .orElse(null);
+    }
+
+    public void saveSurveyTopicIfCurrent(Long meetingId, String topic,
+            PreBriefingResponse.SurveyTopicQuestion result) {
+        if (!isValid(result) || result.questions().isEmpty()) return;
+        transactionTemplate.executeWithoutResult(status -> {
+            var survey = surveyRepository.findByMeetingIdForUpdate(meetingId);
+            if (survey.isEmpty() || !topic.equals(survey.get().getTopic())) return;
+            Map<String, Object> payload = objectMapper.convertValue(result, new TypeReference<>() {});
+            var existing = preBriefingRepository.findByMeetingIdAndType(meetingId, PreBriefingType.SURVEY_TOPIC);
+            if (existing.isPresent()) {
+                existing.get().replacePayload(payload);
+            } else {
+                preBriefingRepository.save(MeetingPreBriefing.builder().meetingId(meetingId)
+                        .type(PreBriefingType.SURVEY_TOPIC).schemaVersion(SCHEMA_VERSION).payload(payload).build());
+            }
+        });
     }
 
     @SuppressWarnings("unchecked")

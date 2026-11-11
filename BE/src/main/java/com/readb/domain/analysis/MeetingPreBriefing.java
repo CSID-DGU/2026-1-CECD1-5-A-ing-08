@@ -38,4 +38,8 @@ public class MeetingPreBriefing {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public void replacePayload(Map<String, Object> payload) {
+        this.payload = payload;
+    }
 }
