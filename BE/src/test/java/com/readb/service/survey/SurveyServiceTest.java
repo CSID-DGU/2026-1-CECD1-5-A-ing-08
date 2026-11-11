@@ -2,6 +2,7 @@ package com.readb.service.survey;
 
 import com.readb.common.exception.BusinessException;
 import com.readb.domain.meeting.Meeting;
+import com.readb.domain.meeting.MeetingStatus;
 import com.readb.domain.survey.Survey;
 import com.readb.dto.survey.SurveyHistoryResponse;
 import com.readb.dto.survey.SurveyRequest;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -27,6 +29,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,11 +41,14 @@ class SurveyServiceTest {
     @Mock
     private MeetingRepository meetingRepository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private SurveyService surveyService;
 
     @BeforeEach
     void setUp() {
-        surveyService = new SurveyService(surveyRepository, meetingRepository);
+        surveyService = new SurveyService(surveyRepository, meetingRepository, eventPublisher);
     }
 
     @Test
@@ -101,6 +107,30 @@ class SurveyServiceTest {
     }
 
     private static final Map<String, Object> ANSWERS = Map.of("q1", 3, "q2", 3, "q3", 3);
+
+    @Test
+    void updateSurveyChangesAnswersAndPublishesOnlyChangedTopic() {
+        Meeting meeting = Meeting.builder().id(1L).memberId(7L).build();
+        Survey survey = Survey.builder().meetingId(1L).memberId(7L).topic("기존 주제").build();
+        when(meetingRepository.findById(1L)).thenReturn(Optional.of(meeting));
+        when(surveyRepository.findForUpdate(1L, 7L)).thenReturn(Optional.of(survey));
+
+        surveyService.updateSurvey(7L, 1L, new SurveyRequest(1L, Map.of("q1", 1, "q2", 4, "q3", 5), " 새 주제 "));
+
+        assertThat(survey.getTopic()).isEqualTo("새 주제");
+        assertThat(survey.getScores()).isEqualTo(Map.of("vulnerabilityLevel", 5, "dissentLevel", 2, "initiativeLevel", 5));
+        verify(eventPublisher).publishEvent(new SurveyTopicChanged(1L, "새 주제"));
+    }
+
+    @Test
+    void updateSurveyRejectsNonCreatedMeeting() {
+        Meeting meeting = Meeting.builder().id(1L).memberId(7L).status(MeetingStatus.TRANSCRIBING).build();
+        when(meetingRepository.findById(1L)).thenReturn(Optional.of(meeting));
+
+        assertThatThrownBy(() -> surveyService.updateSurvey(7L, 1L, new SurveyRequest(1L, ANSWERS, "주제")))
+                .isInstanceOf(BusinessException.class);
+        verify(surveyRepository, never()).findForUpdate(1L, 7L);
+    }
 
     @Test
     void encodeScoresReversesQ1Q2IntoLevelKeys() {

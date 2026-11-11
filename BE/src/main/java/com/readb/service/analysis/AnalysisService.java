@@ -979,11 +979,11 @@ public class AnalysisService {
         String topic = briefing.survey().topic();
         if (!briefing.survey().submitted()) return null;
         if (topic == null || topic.isBlank()) return new PreBriefingResponse.SurveyTopicQuestion(null, List.of());
-        Meeting meeting = meetingRepository.findById(meetingId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
-        return generatedGuideService.getOrGeneratePre(meetingId, PreBriefingType.SURVEY_TOPIC,
-                PreBriefingResponse.SurveyTopicQuestion.class,
-                () -> buildSurveyTopicQuestion(topic.trim(), meeting.getMemberId()));
+        return generatedGuideService.getStoredSurveyTopic(meetingId, topic.trim());
+    }
+
+    public PreBriefingResponse.SurveyTopicQuestion generateSurveyTopicQuestion(String topic, Long memberId) {
+        return buildSurveyTopicQuestion(topic, memberId);
     }
 
     private String computeQuadrant(Double safetyScore, Double surveyScore) {

@@ -20,10 +20,11 @@ export interface SurveyData {
   id: number;
   meetingId: number;
   memberId: number;
+  topic: string | null;
   scores: {
-    issues?: string[];
-    energyLevel?: number;
-    desiredRoles?: string[];
+    vulnerabilityLevel?: number;
+    dissentLevel?: number;
+    initiativeLevel?: number;
     [key: string]: unknown;
   };
 }
@@ -156,6 +157,10 @@ export async function cancelMeeting(meetingId: number | string): Promise<void> {
 
 export async function submitSurvey(payload: SubmitSurveyPayload): Promise<void> {
   await apiClient.post<ApiResponse<void>>('/api/v1/surveys', payload);
+}
+
+export async function updateSurvey(payload: SubmitSurveyPayload): Promise<void> {
+  await apiClient.put<ApiResponse<void>>(`/api/v1/surveys/${payload.meetingId}`, payload);
 }
 
 export async function fetchSurvey(meetingId: string): Promise<SurveyData> {

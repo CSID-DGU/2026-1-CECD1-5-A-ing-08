@@ -6,6 +6,7 @@ import com.readb.dto.meeting.PreBriefingResponse.CoachingGuide;
 import com.readb.dto.meeting.PreBriefingResponse.SurveyTopicQuestion;
 import com.readb.repository.MeetingPostCoachingRepository;
 import com.readb.repository.MeetingPreBriefingRepository;
+import com.readb.repository.SurveyRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -27,7 +28,7 @@ class GeneratedGuideServiceTest {
     @Test
     void 무효_주제의_빈_질문_결과는_유효하다() {
         GeneratedGuideService service = new GeneratedGuideService(
-                mock(MeetingPreBriefingRepository.class), mock(MeetingPostCoachingRepository.class),
+                mock(MeetingPreBriefingRepository.class), mock(SurveyRepository.class), mock(MeetingPostCoachingRepository.class),
                 new ObjectMapper(), mock(PlatformTransactionManager.class));
         boolean valid = ReflectionTestUtils.invokeMethod(service, "isValid",
                 new SurveyTopicQuestion(null, List.of()));
@@ -39,7 +40,7 @@ class GeneratedGuideServiceTest {
         MeetingPreBriefingRepository preRepo = mock(MeetingPreBriefingRepository.class);
         when(preRepo.findByMeetingIdAndType(any(), any())).thenReturn(Optional.empty());
         GeneratedGuideService service = new GeneratedGuideService(
-                preRepo, mock(MeetingPostCoachingRepository.class), new ObjectMapper(),
+                preRepo, mock(SurveyRepository.class), mock(MeetingPostCoachingRepository.class), new ObjectMapper(),
                 mock(PlatformTransactionManager.class));
 
         CoachingGuide guide = new CoachingGuide("집중", "요약", List.of(), List.of("질문 1", "질문 2"));

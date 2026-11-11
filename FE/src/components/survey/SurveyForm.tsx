@@ -1,6 +1,8 @@
 import axios from 'axios';
-import { useMemo, useState } from 'react';
-import { submitSurvey } from '@/api/meetings';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useBeforeUnload, useBlocker, useNavigate } from 'react-router-dom';
+import { submitSurvey, updateSurvey, type SurveyData } from '@/api/meetings';
+import { ROUTES } from '@/constants/routes';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { SURVEY_QUESTIONS, renderQuestion, type SurveyQuestionId } from '@/constants/surveyQuestions';
@@ -31,16 +33,47 @@ export interface SurveyFormProps {
   scheduledAt: string;
   meetingId: number;
   isFirstMeeting: boolean;
+  initialSurvey: SurveyData | null;
+  editable: boolean;
 }
 
-export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirstMeeting }: SurveyFormProps) {
-  const [scores, setScores] = useState<SurveyScores>({ q1: null, q2: null, q3: null });
-  const [topic, setTopic] = useState('');
-  const [message, setMessage] = useState('');
+export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirstMeeting, initialSurvey, editable }: SurveyFormProps) {
+  const navigate = useNavigate();
+  const [submitted, setSubmitted] = useState(Boolean(initialSurvey));
+  const saved = initialSurvey?.scores;
+  const [scores, setScores] = useState<SurveyScores>({
+    q1: typeof saved?.vulnerabilityLevel === 'number' ? 6 - saved.vulnerabilityLevel : null,
+    q2: typeof saved?.dissentLevel === 'number' ? 6 - saved.dissentLevel : null,
+    q3: typeof saved?.initiativeLevel === 'number' ? saved.initiativeLevel : null,
+  });
+  const [topic, setTopic] = useState(initialSurvey?.topic ?? '');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const saveCompleted = useRef(false);
+  const hasUnsavedChanges = scores.q1 !== (typeof saved?.vulnerabilityLevel === 'number' ? 6 - saved.vulnerabilityLevel : null)
+    || scores.q2 !== (typeof saved?.dissentLevel === 'number' ? 6 - saved.dissentLevel : null)
+    || scores.q3 !== (typeof saved?.initiativeLevel === 'number' ? saved.initiativeLevel : null)
+    || topic.trim() !== (initialSurvey?.topic ?? '').trim();
+  const shouldWarnOnLeave = (hasUnsavedChanges || isSubmitting) && !saveCompleted.current;
+  const blocker = useBlocker(() => shouldWarnOnLeave && !saveCompleted.current);
 
-  const canSubmit = meetingId > 0 && SURVEY_QUESTIONS.every((q) => scores[q.id] !== null);
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return;
+    if (window.confirm('지금 나가면 설문이 저장되지 않을 수 있습니다. 페이지를 나가시겠습니까?')) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+    }
+  }, [blocker]);
+
+  useBeforeUnload((event) => {
+    if (shouldWarnOnLeave) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  });
+
+  const canSubmit = editable && meetingId > 0 && SURVEY_QUESTIONS.every((q) => scores[q.id] !== null);
 
   const scheduledDate = useMemo(() => {
     if (!scheduledAt) return '일정 미정';
@@ -65,15 +98,18 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirst
   const handleSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
     setIsSubmitting(true);
-    setMessage('');
     setError('');
     try {
-      await submitSurvey({
+      await (submitted ? updateSurvey : submitSurvey)({
         meetingId,
         scores: { q1: scores.q1!, q2: scores.q2!, q3: scores.q3! },
         topic: topic.trim() || undefined,
       });
-      setMessage('서베이가 제출되었습니다.');
+      saveCompleted.current = true;
+      navigate(ROUTES.MEMBER_MEETINGS, {
+        replace: true,
+        state: { surveyMessage: submitted ? '사전 설문 수정이 완료되었습니다.' : '사전 설문이 완료되었습니다.' },
+      });
     } catch (err) {
       setError(getSubmitErrorMessage(err) ?? '서베이 제출에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
@@ -106,8 +142,8 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirst
                       key={opt.value}
                       type="button"
                       onClick={() => {
+                        if (!editable) return;
                         setScores((prev) => ({ ...prev, [q.id]: opt.value }));
-                        setMessage('');
                         setError('');
                       }}
                       className={`flex aspect-square min-h-[72px] flex-col items-center justify-center rounded-[16px] border text-center text-xs font-bold transition-colors whitespace-pre-line ${
@@ -133,6 +169,7 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirst
             <textarea
               id="survey-topic"
               value={topic}
+              disabled={!editable}
               onChange={(e) => setTopic(e.target.value)}
               maxLength={200}
               rows={3}
@@ -152,9 +189,8 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirst
                   : 'bg-slate-100 text-slate-400 hover:bg-slate-100 disabled:opacity-100'
               }`}
             >
-              {isSubmitting ? '제출 중...' : '제출하기'}
+              {isSubmitting ? '저장 중...' : submitted ? '수정하기' : '제출하기'}
             </Button>
-            {message && <p className="mt-4 text-center text-sm font-medium text-green-600">{message}</p>}
             {error && <p className="mt-4 text-center text-sm font-medium text-red-600">{error}</p>}
             <p className="mt-9 text-center text-sm text-slate-400">소요시간 약 30초</p>
           </div>
