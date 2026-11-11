@@ -3,11 +3,26 @@ import { useState } from "react";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onStart: () => void;
+  onStart: () => Promise<void>;
 }
 
 export default function StartMeetingModal({ isOpen, onClose, onStart }: Props) {
   const [consent, setConsent] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleStart = async () => {
+    setStarting(true);
+    setError(null);
+    try {
+      await onStart();
+      onClose();
+    } catch {
+      setError('마이크 또는 실시간 측정을 시작하지 못했습니다. 브라우저 권한을 확인해 주세요.');
+    } finally {
+      setStarting(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -44,6 +59,7 @@ export default function StartMeetingModal({ isOpen, onClose, onStart }: Props) {
           />
           <span className="text-sm text-gray-600">상대방의 녹음 동의를 구했어요.</span>
         </label>
+        {error && <p className="mb-4 text-sm text-red-600" role="alert">{error}</p>}
 
         <div className="flex justify-end gap-3">
           <button
@@ -53,16 +69,13 @@ export default function StartMeetingModal({ isOpen, onClose, onStart }: Props) {
             취소
           </button>
           <button
-            onClick={() => {
-              onStart();
-              onClose();
-            }}
-            disabled={!consent}
+            onClick={handleStart}
+            disabled={!consent || starting}
             className={`px-6 py-2.5 rounded-lg text-sm text-white transition-colors ${
               consent ? "bg-[#5F74FA] hover:bg-[#4E62E6]" : "bg-gray-300 cursor-not-allowed"
             }`}
           >
-            미팅 시작
+            {starting ? '시작 중...' : '미팅 시작'}
           </button>
         </div>
       </div>

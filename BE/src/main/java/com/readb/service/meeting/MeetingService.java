@@ -26,6 +26,7 @@ import com.readb.repository.RecordingRepository;
 import com.readb.repository.SurveyRepository;
 import com.readb.repository.UserRepository;
 import com.readb.service.analysis.AnalysisOrchestrator;
+import com.readb.service.talk.TalkRatioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -60,6 +61,7 @@ public class MeetingService {
     private final AnalysisOrchestrator analysisOrchestrator;
     private final CareerEventRepository careerEventRepository;
     private final PromiseRepository promiseRepository;
+    private final TalkRatioService talkRatioService;
 
     private static final DateTimeFormatter DEFAULT_TITLE_FORMAT =
             DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 '1on1 미팅'");
@@ -87,6 +89,7 @@ public class MeetingService {
         validateFile(file);
 
         RecordingPayload payload = extractPayload(file, durationSec);
+        talkRatioService.endSession(meetingId);
 
         meeting.updateStatus(MeetingStatus.TRANSCRIBING);
         meetingRepository.save(meeting);

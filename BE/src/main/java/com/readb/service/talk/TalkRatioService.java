@@ -3,6 +3,7 @@ package com.readb.service.talk;
 import com.readb.common.exception.BusinessException;
 import com.readb.common.exception.ErrorCode;
 import com.readb.domain.talk.TalkSession;
+import com.readb.domain.talk.ClassifiedSpeech;
 import com.readb.dto.talk.ActiveTalkRatioResponse;
 import com.readb.dto.talk.TalkRatioEvent;
 import lombok.RequiredArgsConstructor;
@@ -32,27 +33,39 @@ public class TalkRatioService {
     private long activeUpdatedAtMs;
 
     public void calibrateLeader(Long meetingId, MultipartFile audio) throws IOException {
-        TalkSession session = sessions.computeIfAbsent(meetingId, id -> new TalkSession());
         byte[] pcm = audioAnalyzer.toPcm(audio);
-        session.setLeaderProfile(audioAnalyzer.extractProfile(pcm));
+        try {
+            TalkSession session = new TalkSession();
+            session.setLeaderProfile(audioAnalyzer.extractProfile(pcm));
+            sessions.put(meetingId, session);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.ANALYSIS_FAILED);
+        }
     }
 
     public void calibrateMember(Long meetingId, MultipartFile audio) throws IOException {
         TalkSession session = sessions.computeIfAbsent(meetingId, id -> new TalkSession());
         byte[] pcm = audioAnalyzer.toPcm(audio);
-        session.setMemberProfile(audioAnalyzer.extractProfile(pcm));
+        try {
+            session.setMemberProfile(audioAnalyzer.extractProfile(pcm));
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.ANALYSIS_FAILED);
+        }
     }
 
-    public void processChunk(Long meetingId, MultipartFile audio) throws IOException {
+    public void processChunk(Long meetingId, MultipartFile audio, Integer sequence) throws IOException {
         TalkSession session = sessions.get(meetingId);
         if (session == null || !session.isCalibrated()) {
             throw new BusinessException(ErrorCode.ANALYSIS_FAILED);
         }
-        byte[] pcm = audioAnalyzer.toPcm(audio);
-        long[] result = audioAnalyzer.classifyChunk(pcm, session.getLeaderProfile(), session.getMemberProfile());
-        session.addLeaderMs(result[0]);
-        session.addMemberMs(result[1]);
-        sseEmitterRegistry.push(meetingId, TalkRatioEvent.of(session.leaderRatio()));
+        synchronized (session) {
+            if (sequence != null && session.alreadyProcessed(sequence)) return;
+            byte[] pcm = audioAnalyzer.toPcm(audio);
+            ClassifiedSpeech result = audioAnalyzer.classifyChunk(pcm, session.getLeaderProfile(), session.getMemberProfile());
+            session.addSpeech(result);
+            if (sequence != null) session.markProcessed(sequence);
+            sseEmitterRegistry.push(meetingId, TalkRatioEvent.of(session));
+        }
 
         // 현재 진행 중인 세션 갱신 (IoT 디바이스 폴링용)
         synchronized (activeSessionLock) {

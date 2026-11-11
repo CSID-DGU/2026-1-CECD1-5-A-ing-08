@@ -31,7 +31,7 @@ export default function MeetingDetailPage() {
   const [showStart, setShowStart] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
   const [localStatus, setLocalStatus] = useState<LocalStatus>("pending");
-  const ratio = useTalkRatioStream(localStatus === "recording" ? (meetingId ? Number(meetingId) : null) : null);
+  const { ratio, connected: ratioConnected } = useTalkRatioStream(localStatus === "recording" ? (meetingId ? Number(meetingId) : null) : null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const pendingUploadRef = useRef<{ blob: Blob; durationSec: number } | null>(null);
   const { completed: surveyCompleted } = useSurveyCompletion(
@@ -265,7 +265,7 @@ export default function MeetingDetailPage() {
           )}
           {localStatus === "recording" && (
             <div className="border-t border-gray-200 px-8 py-6 flex flex-col items-center gap-3">
-              <TalkRatioBadge leaderRatio={ratio?.leaderRatio ?? null} calibrationState={recorder.calibrationState} />
+              <TalkRatioBadge ratio={ratio} calibrationState={recorder.calibrationState} error={recorder.captureError} connected={ratioConnected} />
               <span className="text-sm font-medium text-[#5F74FA]">🎙 녹음 중입니다</span>
               <span className="text-xs text-gray-400">아래 플로팅 바에서 미팅을 종료할 수 있습니다.</span>
             </div>

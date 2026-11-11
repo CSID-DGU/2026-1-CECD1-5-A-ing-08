@@ -3,7 +3,8 @@ package com.readb.service.talk;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.readb.dto.talk.TalkRatioEvent;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -12,10 +13,11 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SseEmitterRegistry {
+
+    private static final Logger log = LoggerFactory.getLogger(SseEmitterRegistry.class);
 
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;

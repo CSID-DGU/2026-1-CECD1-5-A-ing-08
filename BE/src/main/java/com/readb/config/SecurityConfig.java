@@ -34,8 +34,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/signup", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/meetings/*/talk-ratio/stream").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/meetings/*/talk-ratio/current").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/talk-ratio/active").permitAll()
                 .anyRequest().authenticated()
             )
