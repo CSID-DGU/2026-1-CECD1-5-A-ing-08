@@ -136,13 +136,23 @@ export default function GapsSection({ data }: Props) {
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
             Alignment Gap
           </p>
-          <GapDonut
-            ratio={alignmentGap.score / 100}
-            fillColor="#5F74FA"
-            centerLabel={String(alignmentGap.score)}
-            subLabel="/100"
-          />
-          <p className="text-xs text-gray-500 leading-relaxed">{alignmentGap.detail}</p>
+          {alignmentGap.score != null ? (
+            <>
+              <GapDonut
+                ratio={alignmentGap.score / 100}
+                fillColor="#5F74FA"
+                centerLabel={String(alignmentGap.score)}
+                subLabel="/100"
+              />
+              <p className="text-xs text-gray-500 leading-relaxed whitespace-pre-line">
+                {alignmentGap.detail}
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-gray-400 leading-relaxed">
+              이번 미팅에는 사전 서베이 주제와 비교한 결과가 없습니다.
+            </p>
+          )}
         </div>
 
         {/* Honesty Gap */}
