@@ -22,8 +22,9 @@ export interface Gaps {
 }
 
 export interface AlignmentGap {
-  score: number;
-  detail: string;
+  /** 서베이 주제가 없거나 측정하지 못하면 null */
+  score: number | null;
+  detail: string | null;
 }
 
 export interface HonestyGap {
