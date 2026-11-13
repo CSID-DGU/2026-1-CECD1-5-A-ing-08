@@ -51,7 +51,9 @@ public class GeminiAdapter implements LlmAdapter {
                         Map.of("role", "system", "content", systemPrompt),
                         Map.of("role", "user", "content", userPrompt)
                 ),
-                "response_format", Map.of("type", "json_object")
+                "response_format", Map.of("type", "json_object"),
+                // 같은 전사본이면 같은 Speech Act가 뽑히도록 샘플링 무작위성 제거
+                "temperature", 0
         );
 
         try {
