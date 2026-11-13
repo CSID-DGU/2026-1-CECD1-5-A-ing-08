@@ -1048,8 +1048,8 @@ Authorization: Bearer <token> (LEADER)
 
     "gaps": {
       "alignmentGap": {
-        "score": 35,
-        "detail": "서베이에서 선택한 '커리어 성장' 주제 — 언급은 되었으나 구체적 결론 없음"
+        "score": 60,
+        "detail": "'커리어 성장' — 논의했으나 결론·다음 할 일 없음 (12:34 \"요즘 커리어 방향이 고민이에요\")"
       },
       "honestyGap": {
         "surveyScore": 87,
@@ -2257,3 +2257,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-10-30 | v3.5 | 7.1-T `POST /meetings/{meetingId}/analyze-test` 명세 추가 — 스크립트(`[leader]`/`[member]` 라벨) 기반 분석을 202 비동기로 전환, 리더 권한 체크·Recording 저장·상태 전환 적용 (기존: 인증만, 동기, `Map` body). |
 | 2026-10-31 | v3.6 | A.0 파이프라인 STT를 OpenAI `whisper-1` → Groq `whisper-large-v3`(OpenAI 호환 엔드포인트)로 교체. 환경변수 `OPENAI_API_KEY` → `GROQ_API_KEY`. API 요청·응답 형식 변경 없음. |
 | 2026-11-06 | v3.7 | `GET /members/me/speech-trend`(명세 외, v2.4에서 제거된 엔드포인트) 응답 필드 `dissentCount` → `constructiveDissentCount`. 집계 키를 `"dissent"` → `"constructiveDissent"`로 바로잡아 D 횟수가 항상 0이던 버그 수정. 내부 baseline 키 `prev_avg_dissent` → `prev_avg_constructiveDissent`. |
+| 2026-11-12 | v3.8 | `gaps.alignmentGap`: 서베이 `topic`을 전사와 실제로 비교하도록 수정 (기존엔 주제 문자열이 프롬프트에 전달되지 않음). 주제별 결과 단계를 PRD 점수표(0/25/40/60/85/100)로 서버에서 계산해 평균. `detail`은 주제별 한 줄(`\n` 구분), 전사에서 확인된 원문 인용·타임스탬프 포함(화자는 녹음 전사에 라벨이 없어 표시하지 않음). 서베이 주제가 없거나 무효·분석 실패 시 `score`·`detail` 모두 `null` (기존: 50, "서베이 정보 없음"). |
