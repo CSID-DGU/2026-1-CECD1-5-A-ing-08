@@ -11,8 +11,8 @@ const MOCK_LEADER_REPORT: LeaderReport = {
   durationSec: 2400,
   gaps: {
     alignmentGap: {
-      score: 35,
-      detail: "서베이에서 선택한 '커리어 성장' 주제 — 언급은 되었으나 구체적 결론 없음",
+      score: 60,
+      detail: "'커리어 성장' — 논의했으나 결론·다음 할 일 없음 (12:34 \"요즘 커리어 방향이 고민이에요\")",
     },
     honestyGap: {
       surveyScore: 87,
