@@ -704,7 +704,7 @@ Authorization: Bearer <token> (MEMBER)
 
 | 필드 | 타입 | 필수 | 검증 규칙 |
 |------|------|------|-----------|
-| meetingId | number | O | 존재하는 미팅 + **요청자가 해당 미팅의 멤버 본인**이어야 함 (리더 등 타인이 제출하면 403). 같은 미팅에 서베이 1건만 허용 |
+| meetingId | number | O | 존재하는 `CREATED` 미팅 + **요청자가 해당 미팅의 멤버 본인**이어야 함 (리더 등 타인이 제출하면 403). 같은 미팅에 서베이 1건만 허용 |
 | scores.q1~q3 | number | O | 1~5 정수, 3문항 모두 필수 (누락·범위 밖이면 400 INVALID_INPUT) |
 | topic | string | X | Q4 자유 서술, 최대 200자. 공백만 있으면 null |
 
@@ -727,10 +727,21 @@ Authorization: Bearer <token> (MEMBER)
 
 > surveyScore는 저장하지 않고 분석·레이더 조회 시 서버가 계산한다 (A.2 참조).
 
+주제가 있으면 설문 저장 커밋 후 주제 질문 생성을 비동기로 시작한다. 생성 실패는 설문 저장 결과에 영향을 주지 않으며 자동 재시도하지 않는다.
+
+### 6.1.1 사전 서베이 수정 (멤버)
+```
+PUT /api/v1/surveys/{meetingId}
+Authorization: Bearer <token> (MEMBER)
+```
+
+요청 본문은 6.1과 동일하며 경로와 본문의 `meetingId`가 일치해야 한다. 해당 미팅의 멤버 본인만 `CREATED` 상태에서 수정할 수 있다. `scores` 전체와 `topic`을 교체한다. 주제가 변경되면 저장 커밋 후 새 질문 생성을 시작한다. 주제를 비우면 기존 질문은 조회 시 표시되지 않는다. **Response** `200` — `data: null`.
+
 **에러**
 | 코드 | HTTP | 상황 |
 |------|------|------|
 | SURVEY_ALREADY_SUBMITTED | 409 | 이미 서베이를 제출한 미팅 |
+| SURVEY_CLOSED | 409 | 미팅 상태가 `CREATED`가 아님 |
 | FORBIDDEN | 403 | 해당 미팅의 멤버 본인이 아님 (리더 포함 타인 제출 차단) |
 | MEETING_NOT_FOUND | 404 | 존재하지 않는 미팅 |
 | INVALID_INPUT | 400 | q1~q3 누락 또는 1~5 범위 밖 |
@@ -753,12 +764,16 @@ Authorization: Bearer <token>
     "id": 5,
     "meetingId": 10,
     "memberId": 7,
-    "scores": { "vulnerabilityLevel": 4, "dissentLevel": 2, "initiativeLevel": 5 }
+    "scores": { "vulnerabilityLevel": 4, "dissentLevel": 2, "initiativeLevel": 5 },
+    "topic": "다음 분기 프로젝트 역할"
   }
 }
 ```
 
 ---
+
+주제 질문 조회(`GET /api/v1/meetings/{meetingId}/pre-briefing/topic-questions`)는 저장된 결과만 반환하며 생성하지 않는다. 저장된 질문의 주제가 현재 설문 주제와 다르거나 생성 결과가 없으면 `data: null`이다. 리더 화면은 새로고침 또는 재진입 시 이를 다시 조회한다.
+
 
 ### 6.3 서베이 이력 조회 (멤버)
 ```

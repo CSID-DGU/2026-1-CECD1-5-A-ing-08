@@ -31,6 +31,13 @@ public class SurveyController {
         return ApiResponse.ok();
     }
 
+    @PutMapping("/{meetingId}")
+    public ApiResponse<Void> updateSurvey(@AuthenticationPrincipal Long memberId,
+            @PathVariable Long meetingId, @Valid @RequestBody SurveyRequest request) {
+        surveyService.updateSurvey(memberId, meetingId, request);
+        return ApiResponse.ok();
+    }
+
     @GetMapping("/history")
     public ApiResponse<Page<SurveyHistoryResponse>> getHistory(
             @AuthenticationPrincipal Long memberId,

@@ -1,4 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { fetchSurvey, type SurveyData } from "@/api/meetings";
 import PageLayout from "@/components/layout/PageLayout";
 import { useMeetingDetail } from "@/features/meeting/useMeetingDetail";
 import SurveyForm from "@/components/survey/SurveyForm";
@@ -10,6 +13,22 @@ export default function MemberMeetingDetailPage() {
   const { meetingId } = useParams<{ meetingId: string }>();
   const navigate = useNavigate();
   const { meeting, loading, error } = useMeetingDetail(meetingId);
+  const [survey, setSurvey] = useState<SurveyData | null>(null);
+  const [surveyLoading, setSurveyLoading] = useState(true);
+  const [surveyError, setSurveyError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!meetingId) return;
+    let cancelled = false;
+    setSurveyLoading(true);
+    fetchSurvey(meetingId).then((data) => { if (!cancelled) setSurvey(data); })
+      .catch((err) => {
+        if (!cancelled && !(axios.isAxiosError(err) && err.response?.status === 404))
+          setSurveyError('서베이를 불러오지 못했습니다.');
+      })
+      .finally(() => { if (!cancelled) setSurveyLoading(false); });
+    return () => { cancelled = true; };
+  }, [meetingId]);
 
   if (loading) {
     return (
@@ -40,6 +59,9 @@ export default function MemberMeetingDetailPage() {
     );
   }
 
+  if (surveyLoading) return <PageLayout><div className="p-8 text-sm text-gray-400">서베이를 불러오는 중...</div></PageLayout>;
+  if (surveyError) return <PageLayout><div className="p-8 text-sm text-red-600">{surveyError}</div></PageLayout>;
+
   if (meeting.status === "ANALYZING") {
     return (
       <PageLayout>
@@ -65,6 +87,8 @@ export default function MemberMeetingDetailPage() {
             scheduledAt={meeting.scheduledAt}
             meetingId={meeting.meetingId}
             isFirstMeeting={meeting.round === 1}
+            initialSurvey={survey}
+            editable={meeting.status === 'CREATED'}
           />
         </div>
       </div>

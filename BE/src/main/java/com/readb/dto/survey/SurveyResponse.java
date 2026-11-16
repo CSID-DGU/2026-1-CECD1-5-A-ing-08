@@ -8,14 +8,16 @@ public record SurveyResponse(
         Long id,
         Long meetingId,
         Long memberId,
-        Map<String, Object> scores
+        Map<String, Object> scores,
+        String topic
 ) {
     public static SurveyResponse from(Survey survey) {
         return new SurveyResponse(
                 survey.getId(),
                 survey.getMeetingId(),
                 survey.getMemberId(),
-                survey.getScores()
+                survey.getScores(),
+                survey.getTopic()
         );
     }
 }

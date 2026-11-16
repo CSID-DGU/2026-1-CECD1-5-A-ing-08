@@ -25,8 +25,7 @@ export default function MeetingDetailPage() {
   const { meetingId } = useParams<{ meetingId: string }>();
   const navigate = useNavigate();
   const { meeting, loading, error } = useMeetingDetail(meetingId);
-  const { data: briefing, loading: briefingLoading, error: briefingError, retry: retryBriefing,
-    topicLoading, topicError, retryTopic } = usePreBriefing(meetingId);
+  const { data: briefing, loading: briefingLoading, error: briefingError, retry: retryBriefing } = usePreBriefing(meetingId);
   const recorder = useChunkedRecorder(meetingId ? Number(meetingId) : 0);
   const { upload } = useUploadRecording();
   const [showStart, setShowStart] = useState(false);
@@ -209,7 +208,7 @@ export default function MeetingDetailPage() {
                   </p>
                 </div>
               )}
-              {!briefingLoading && briefing && <PreBriefingCard data={briefing} topicLoading={topicLoading} topicError={topicError} onRetryTopic={retryTopic} />}
+              {!briefingLoading && briefing && <PreBriefingCard data={briefing} />}
               {!briefingLoading && briefingError && (
                 <div className="w-full max-w-[560px] rounded-xl border border-red-100 bg-red-50 px-5 py-4 text-sm text-red-600">
                   <div className="flex items-center justify-between gap-4">

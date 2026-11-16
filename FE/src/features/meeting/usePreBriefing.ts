@@ -8,8 +8,6 @@ export function usePreBriefing(meetingId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [topicLoading, setTopicLoading] = useState(false);
-  const [topicError, setTopicError] = useState(false);
 
   useEffect(() => {
     if (!meetingId) {
@@ -35,15 +33,11 @@ export function usePreBriefing(meetingId: string | undefined) {
           .then((guide) => { if (!cancelled) setData((current) => current && { ...current, coachingGuide: guide ?? undefined }); })
           .catch(() => {});
         if (briefing.survey.submitted && briefing.survey.topic?.trim()) {
-          setTopicLoading(true);
-          setTopicError(false);
           fetchPreBriefingTopicQuestions(meetingId)
             .then((questions) => {
-              if (!questions) throw new Error('Question generation failed');
               if (!cancelled) setData((current) => current && { ...current, surveyTopicQuestion: questions });
             })
-            .catch(() => { if (!cancelled) setTopicError(true); })
-            .finally(() => { if (!cancelled) setTopicLoading(false); });
+            .catch(() => {});
         }
       })
       .catch(() => {
@@ -60,18 +54,5 @@ export function usePreBriefing(meetingId: string | undefined) {
 
   const retry = useCallback(() => setRetryCount((count) => count + 1), []);
 
-  const retryTopic = useCallback(() => {
-    if (!meetingId) return;
-    setTopicLoading(true);
-    setTopicError(false);
-    fetchPreBriefingTopicQuestions(meetingId)
-      .then((questions) => {
-        if (!questions) throw new Error('Question generation failed');
-        setData((current) => current && { ...current, surveyTopicQuestion: questions });
-      })
-      .catch(() => setTopicError(true))
-      .finally(() => setTopicLoading(false));
-  }, [meetingId]);
-
-  return { data, loading, error, retry, topicLoading, topicError, retryTopic };
+  return { data, loading, error, retry };
 }

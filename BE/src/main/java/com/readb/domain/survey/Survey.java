@@ -37,4 +37,9 @@ public class Survey {
     @CreationTimestamp
     @Column(name = "submitted_at", updatable = false)
     private LocalDateTime submittedAt;
+
+    public void update(Map<String, Object> scores, String topic) {
+        this.scores = scores;
+        this.topic = topic;
+    }
 }
