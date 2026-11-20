@@ -45,4 +45,8 @@ public class Meeting {
     public void updateStatus(MeetingStatus status) {
         this.status = status;
     }
+
+    public void updateTitle(String title) {
+        this.title = title;
+    }
 }

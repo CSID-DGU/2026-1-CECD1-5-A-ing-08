@@ -154,6 +154,10 @@ export async function cancelMeeting(meetingId: number | string): Promise<void> {
   await apiClient.delete(`/api/v1/meetings/${meetingId}`);
 }
 
+export async function updateMeetingTitle(meetingId: number | string, title: string): Promise<void> {
+  await apiClient.patch(`/api/v1/meetings/${meetingId}/title`, { title });
+}
+
 export async function submitSurvey(payload: SubmitSurveyPayload): Promise<void> {
   await apiClient.post<ApiResponse<void>>('/api/v1/surveys', payload);
 }

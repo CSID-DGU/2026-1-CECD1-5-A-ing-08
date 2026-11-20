@@ -685,6 +685,34 @@ Authorization: Bearer <token>
 
 ---
 
+### 5.5 미팅 제목 수정 (리더)
+```
+PATCH /api/v1/meetings/{meetingId}/title
+Authorization: Bearer <token>
+```
+**인증 필요**: O (리더 전용)
+
+미팅 상태(진행 전/분석 중/완료/실패)와 무관하게 제목을 수정한다. 앞뒤 공백은 제거되어 저장된다.
+
+**Request Body**
+```json
+{ "title": "11월 커리어 면담" }
+```
+
+| 필드 | 필수 | 설명 |
+|------|------|------|
+| title | O | 1~100자, 공백만은 불가 |
+
+**Response** `200` — `data: null`
+
+| 에러 코드 | 상태 | 의미 |
+|-----------|------|------|
+| INVALID_INPUT | 400 | title 누락·공백·100자 초과 |
+| MEETING_NOT_FOUND | 404 | 미팅 없음 |
+| FORBIDDEN | 403 | 리더 본인 미팅 아님 |
+
+---
+
 ## 6. SURVEY (사전 서베이)
 
 ### 6.1 사전 서베이 제출 (멤버)
@@ -2260,3 +2288,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-11-06 | v3.7 | `GET /members/me/speech-trend`(명세 외, v2.4에서 제거된 엔드포인트) 응답 필드 `dissentCount` → `constructiveDissentCount`. 집계 키를 `"dissent"` → `"constructiveDissent"`로 바로잡아 D 횟수가 항상 0이던 버그 수정. 내부 baseline 키 `prev_avg_dissent` → `prev_avg_constructiveDissent`. |
 | 2026-11-12 | v3.8 | `gaps.alignmentGap`: 서베이 `topic`을 전사와 실제로 비교하도록 수정 (기존엔 주제 문자열이 프롬프트에 전달되지 않음). 주제별 결과 단계를 PRD 점수표(0/25/40/60/85/100)로 서버에서 계산해 평균. `detail`은 주제별 한 줄(`\n` 구분), 전사에서 확인된 원문 인용·타임스탬프 포함(화자는 녹음 전사에 라벨이 없어 표시하지 않음). 서베이 주제가 없거나 무효·분석 실패 시 `score`·`detail` 모두 `null` (기존: 50, "서베이 정보 없음"). |
 | 2026-11-20 | v3.9 | 7.1-T `analyze-test`: COMPLETED 미팅도 재분석 허용 (TRANSCRIBING/ANALYZING일 때만 409). 재분석 시 기존 분석 결과 삭제 후 저장하며 `meeting_id` unique 충돌 수정. |
+| 2026-11-20 | v4.0 | **5.5절 신규**: `PATCH /meetings/{id}/title` 미팅 제목 수정 (리더 전용, 분석 상태 무관). |

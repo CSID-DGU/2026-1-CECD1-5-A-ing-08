@@ -111,6 +111,14 @@ public class MeetingService {
         analysisOrchestrator.startAnalysisFromTranscript(meetingId, transcript, durationSec);
     }
 
+    // 분석 상태와 무관하게 리더가 제목 수정 가능
+    @Transactional
+    public void updateTitle(Long meetingId, Long leaderId, String title) {
+        Meeting meeting = findMeeting(meetingId);
+        validateOwner(meeting, leaderId);
+        meeting.updateTitle(title.trim());
+    }
+
     // 예정 시각에 진행되지 않은 미팅 취소 = 삭제. 회차는 동적 계산이라 이후 미팅 회차가 자동으로 1씩 감소한다.
     @Transactional
     public void cancelMeeting(Long meetingId, Long leaderId) {

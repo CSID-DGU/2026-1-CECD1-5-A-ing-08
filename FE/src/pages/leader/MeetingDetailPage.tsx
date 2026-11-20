@@ -11,6 +11,7 @@ import EndMeetingModal from "@/components/ui/EndMeetingModal";
 import RecordingFloatingBar from "@/components/ui/RecordingFloatingBar";
 import AnalysisLoading from "@/components/loading/AnalysisLoading";
 import type { MeetingDetail } from "@/types/meeting";
+import { updateMeetingTitle } from "@/api/meetings";
 import LeaderReportView from "@/components/report/LeaderReportView";
 import IotPanel from "@/components/iot/IotPanel";
 import PreBriefingCard from "@/components/meeting/PreBriefingCard";
@@ -24,7 +25,7 @@ type LocalStatus = "pending" | "recording" | "uploading" | "analyzing" | "comple
 export default function MeetingDetailPage() {
   const { meetingId } = useParams<{ meetingId: string }>();
   const navigate = useNavigate();
-  const { meeting, loading, error } = useMeetingDetail(meetingId);
+  const { meeting, loading, error, setTitle } = useMeetingDetail(meetingId);
   const { data: briefing, loading: briefingLoading, error: briefingError, retry: retryBriefing,
     topicLoading, topicError, retryTopic } = usePreBriefing(meetingId);
   const recorder = useChunkedRecorder(meetingId ? Number(meetingId) : 0);
@@ -122,7 +123,7 @@ export default function MeetingDetailPage() {
     return (
       <PageLayout>
         <div className="flex flex-col h-full">
-          <MeetingHeader meeting={meeting} />
+          <MeetingHeader meeting={meeting} onRename={setTitle} />
           <div className="flex-1 flex flex-col items-center justify-center px-8 gap-4 pb-32">
             <div className="w-10 h-10 border-4 border-[#5F74FA] border-t-transparent rounded-full animate-spin" />
             <p className="text-sm text-gray-600">녹음 파일을 업로드 중입니다...</p>
@@ -136,7 +137,7 @@ export default function MeetingDetailPage() {
     return (
       <PageLayout>
         <div className="flex flex-col">
-          <MeetingHeader meeting={meeting} />
+          <MeetingHeader meeting={meeting} onRename={setTitle} />
           <div className="flex-1 flex flex-col items-center justify-center px-8 gap-4">
             <p className="text-base font-semibold text-red-500">
               {uploadError ?? '오류가 발생했습니다.'}
@@ -163,7 +164,7 @@ export default function MeetingDetailPage() {
     return (
       <PageLayout>
         <div className="flex flex-col">
-          <MeetingHeader meeting={meeting} />
+          <MeetingHeader meeting={meeting} onRename={setTitle} />
           <AnalysisLoading
             role="leader"
             recordingDuration={recorder.elapsed}
@@ -179,7 +180,7 @@ export default function MeetingDetailPage() {
     return (
       <PageLayout>
         <div className="flex flex-col h-full">
-          <MeetingHeader meeting={meeting} />
+          <MeetingHeader meeting={meeting} onRename={setTitle} />
           <LeaderReportView meetingId={meetingId!} />
         </div>
       </PageLayout>
@@ -192,7 +193,7 @@ export default function MeetingDetailPage() {
     <PageLayout>
       <div className="flex h-full">
         <div className="flex-1 flex flex-col h-full">
-          <MeetingHeader meeting={meeting} />
+          <MeetingHeader meeting={meeting} onRename={setTitle} />
 
           {!recorder.isRecording && localStatus === "pending" && (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8 py-8 pb-32">
@@ -514,7 +515,7 @@ function MeetingNotes({ meetingId }: { meetingId: string }) {
   );
 }
 
-function MeetingHeader({ meeting }: { meeting: MeetingDetail }) {
+function MeetingHeader({ meeting, onRename }: { meeting: MeetingDetail; onRename: (title: string) => void }) {
   const dateStr = meeting.scheduledAt
     ? new Date(meeting.scheduledAt).toLocaleDateString("ko-KR", {
         year: "numeric",
@@ -522,11 +523,49 @@ function MeetingHeader({ meeting }: { meeting: MeetingDetail }) {
         day: "numeric",
       })
     : '일정 미정';
+  const title = meeting.title || `${meeting.memberName}님과의 1on1`;
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const saveTitle = async () => {
+    const next = draft?.trim();
+    setDraft(null);
+    if (!next || next === title) return;
+    try {
+      await updateMeetingTitle(meeting.meetingId, next);
+      onRename(next);
+    } catch {
+      alert("제목 수정에 실패했습니다.");
+    }
+  };
 
   return (
     <div className="px-8 pt-6 pb-4 border-b border-gray-200">
       <div className="flex items-baseline gap-3">
-        <h1 className="text-2xl font-bold">{meeting.title || `${meeting.memberName}님과의 1on1`}</h1>
+        {draft !== null ? (
+          <input
+            autoFocus
+            value={draft}
+            maxLength={100}
+            aria-label="미팅 제목"
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={saveTitle}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+              if (e.key === "Escape") setDraft(null);
+            }}
+            className="text-2xl font-bold border-b border-[#5F74FA] focus:outline-none"
+          />
+        ) : (
+          <h1 className="text-2xl font-bold">{title}</h1>
+        )}
+        {draft === null && (
+          <button
+            onClick={() => setDraft(title)}
+            className="text-xs text-gray-400 hover:text-[#5F74FA]"
+          >
+            수정
+          </button>
+        )}
         <span className="text-sm text-gray-400">{meeting.round}회차 · {dateStr}</span>
       </div>
       <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">

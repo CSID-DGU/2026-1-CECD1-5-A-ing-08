@@ -8,6 +8,7 @@ import com.readb.dto.meeting.MeetingCreateResponse;
 import com.readb.dto.meeting.MeetingDetailResponse;
 import com.readb.dto.meeting.MeetingListResponse;
 import com.readb.dto.meeting.MeetingStatusResponse;
+import com.readb.dto.meeting.MeetingTitleUpdateRequest;
 import com.readb.dto.meeting.MemberReportResponse;
 import com.readb.dto.meeting.TranscriptAnalyzeRequest;
 import com.readb.service.analysis.AnalysisService;
@@ -62,6 +63,15 @@ public class MeetingController {
             @PathVariable Long meetingId,
             @AuthenticationPrincipal Long userId) {
         return ApiResponse.ok(meetingService.getMeeting(meetingId, userId));
+    }
+
+    @PatchMapping("/{meetingId}/title")
+    public ApiResponse<Void> updateTitle(
+            @PathVariable Long meetingId,
+            @AuthenticationPrincipal Long leaderId,
+            @Valid @RequestBody MeetingTitleUpdateRequest request) {
+        meetingService.updateTitle(meetingId, leaderId, request.title());
+        return ApiResponse.ok();
     }
 
     // 미팅 취소(진행 전 미팅 삭제). 리더만 가능.
