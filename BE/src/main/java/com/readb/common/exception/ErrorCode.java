@@ -40,6 +40,7 @@ public enum ErrorCode {
     // Survey
     SURVEY_NOT_FOUND(HttpStatus.NOT_FOUND, "서베이를 찾을 수 없습니다."),
     SURVEY_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 서베이를 제출했습니다."),
+    SURVEY_CLOSED(HttpStatus.CONFLICT, "미팅이 시작되어 서베이를 수정할 수 없습니다."),
 
     // Common
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."),

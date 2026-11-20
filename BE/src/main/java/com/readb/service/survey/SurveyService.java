@@ -3,6 +3,7 @@ package com.readb.service.survey;
 import com.readb.common.exception.BusinessException;
 import com.readb.common.exception.ErrorCode;
 import com.readb.domain.meeting.Meeting;
+import com.readb.domain.meeting.MeetingStatus;
 import com.readb.domain.survey.Survey;
 import com.readb.domain.survey.SurveyItems;
 import com.readb.dto.survey.SurveyHistoryResponse;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
@@ -25,15 +27,11 @@ public class SurveyService {
 
     private final SurveyRepository surveyRepository;
     private final MeetingRepository meetingRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void submitSurvey(Long memberId, SurveyRequest request) {
-        Meeting meeting = meetingRepository.findById(request.meetingId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
-        // 서베이는 미팅의 멤버 본인만 제출 가능 (리더 계정 등 타인 제출 차단)
-        if (!meeting.getMemberId().equals(memberId)) {
-            throw new BusinessException(ErrorCode.FORBIDDEN);
-        }
+        validateMeeting(memberId, request.meetingId());
         if (surveyRepository.existsByMeetingIdAndMemberId(request.meetingId(), memberId)) {
             throw new BusinessException(ErrorCode.SURVEY_ALREADY_SUBMITTED);
         }
@@ -41,9 +39,33 @@ public class SurveyService {
                 .meetingId(request.meetingId())
                 .memberId(memberId)
                 .scores(encodeScores(request.scores()))
-                .topic(request.topic() != null && !request.topic().isBlank() ? request.topic().strip() : null)
+                .topic(normalizeTopic(request.topic()))
                 .build();
         surveyRepository.save(survey);
+        if (survey.getTopic() != null) eventPublisher.publishEvent(new SurveyTopicChanged(request.meetingId(), survey.getTopic()));
+    }
+
+    @Transactional
+    public void updateSurvey(Long memberId, Long meetingId, SurveyRequest request) {
+        if (!meetingId.equals(request.meetingId())) throw new BusinessException(ErrorCode.INVALID_INPUT);
+        validateMeeting(memberId, meetingId);
+        Survey survey = surveyRepository.findForUpdate(meetingId, memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SURVEY_NOT_FOUND));
+        String topic = normalizeTopic(request.topic());
+        boolean topicChanged = !java.util.Objects.equals(survey.getTopic(), topic);
+        survey.update(encodeScores(request.scores()), topic);
+        if (topicChanged && topic != null) eventPublisher.publishEvent(new SurveyTopicChanged(meetingId, topic));
+    }
+
+    private void validateMeeting(Long memberId, Long meetingId) {
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
+        if (!meeting.getMemberId().equals(memberId)) throw new BusinessException(ErrorCode.FORBIDDEN);
+        if (meeting.getStatus() != MeetingStatus.CREATED) throw new BusinessException(ErrorCode.SURVEY_CLOSED);
+    }
+
+    private static String normalizeTopic(String topic) {
+        return topic == null || topic.isBlank() ? null : topic.strip();
     }
 
     // 요청 { q1, q2, q3 } → 저장 { vulnerabilityLevel, dissentLevel, initiativeLevel } (역문항은 6 - 응답으로 변환)
