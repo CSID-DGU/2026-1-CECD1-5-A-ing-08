@@ -46,7 +46,8 @@ public class Meeting {
         this.status = status;
     }
 
-    public void updateTitle(String title) {
+    public void updateInfo(String title, LocalDateTime scheduledAt) {
         this.title = title;
+        this.scheduledAt = scheduledAt;
     }
 }

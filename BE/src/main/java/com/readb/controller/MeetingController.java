@@ -8,7 +8,7 @@ import com.readb.dto.meeting.MeetingCreateResponse;
 import com.readb.dto.meeting.MeetingDetailResponse;
 import com.readb.dto.meeting.MeetingListResponse;
 import com.readb.dto.meeting.MeetingStatusResponse;
-import com.readb.dto.meeting.MeetingTitleUpdateRequest;
+import com.readb.dto.meeting.MeetingUpdateRequest;
 import com.readb.dto.meeting.MemberReportResponse;
 import com.readb.dto.meeting.TranscriptAnalyzeRequest;
 import com.readb.service.analysis.AnalysisService;
@@ -65,12 +65,12 @@ public class MeetingController {
         return ApiResponse.ok(meetingService.getMeeting(meetingId, userId));
     }
 
-    @PatchMapping("/{meetingId}/title")
-    public ApiResponse<Void> updateTitle(
+    @PatchMapping("/{meetingId}")
+    public ApiResponse<Void> updateMeeting(
             @PathVariable Long meetingId,
             @AuthenticationPrincipal Long leaderId,
-            @Valid @RequestBody MeetingTitleUpdateRequest request) {
-        meetingService.updateTitle(meetingId, leaderId, request.title());
+            @Valid @RequestBody MeetingUpdateRequest request) {
+        meetingService.updateMeeting(meetingId, leaderId, request);
         return ApiResponse.ok();
     }
 

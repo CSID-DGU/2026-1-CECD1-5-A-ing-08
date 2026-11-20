@@ -154,8 +154,11 @@ export async function cancelMeeting(meetingId: number | string): Promise<void> {
   await apiClient.delete(`/api/v1/meetings/${meetingId}`);
 }
 
-export async function updateMeetingTitle(meetingId: number | string, title: string): Promise<void> {
-  await apiClient.patch(`/api/v1/meetings/${meetingId}/title`, { title });
+export async function updateMeeting(
+  meetingId: number | string,
+  body: { title: string; scheduledAt: string | null },
+): Promise<void> {
+  await apiClient.patch(`/api/v1/meetings/${meetingId}`, body);
 }
 
 export async function submitSurvey(payload: SubmitSurveyPayload): Promise<void> {
