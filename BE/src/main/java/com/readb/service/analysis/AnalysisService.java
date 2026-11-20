@@ -462,6 +462,8 @@ public class AnalysisService {
     protected void persistResults(Long meetingId, Meeting meeting, Map<String, Object> step2, Map<String, Object> step3,
                                   AlignmentResult alignment, Integer durationSec) {
         analysisRepository.findByMeetingId(meetingId).ifPresent(analysisRepository::delete);
+        // IDENTITY insert는 즉시 실행되므로 delete를 먼저 DB에 반영해야 meeting_id unique 충돌이 안 난다
+        analysisRepository.flush();
         analysisRepository.save(buildAnalysis(meetingId, step2, step3, alignment, durationSec));
         generatedGuideService.deletePost(meetingId);
 
