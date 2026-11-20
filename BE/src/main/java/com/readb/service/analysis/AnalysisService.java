@@ -58,11 +58,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalDouble;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -95,41 +97,58 @@ public class AnalysisService {
             판별 근거: 존댓말 방향, 보고 vs 질문 패턴, 의사결정 권한 표현
             단, 발화 앞에 [leader] / [member] 라벨이 있으면 추론하지 말고 라벨을 그대로 따르세요.
 
-            Step B. 멤버 발화만 필터링
-            리더 발화는 Speech Act 분류 대상에서 제외합니다.
+            Step B. 멤버 segment 전수 검토
+            리더 발화는 Speech Act 분류 대상에서 제외합니다. 단, 멤버 발화를 판단할 때 직전 리더 발화를 맥락으로 함께 봅니다.
+            전사 텍스트의 처음부터 끝까지 모든 멤버 segment를 하나도 빠짐없이 순서대로 검토하세요. 추출 개수에는 상한이 없습니다.
 
-            Step C. 각 멤버 발화의 화행(illocutionary act) 의도 판단
+            Step C. 각 멤버 segment의 화행(illocutionary act) 판단
+            세는 단위는 전사 segment입니다. 한 segment는 각 유형에 최대 1번만 셉니다.
+            한 segment 안의 여러 문장이 같은 유형에 해당하면, 그 유형의 근거가 가장 분명한 문장 하나만 고르세요.
+            한 segment가 여러 유형에 해당하면 해당하는 모든 유형에 각각 넣습니다(예: 같은 segment가 V와 I에 동시에 들어갈 수 있음).
 
             1. vulnerability (Expressive Act — 자기 상태/감정 표현)
-               정의: 자신의 무지, 실수, 약점, 불안을 솔직하게 드러내는 행위
-               포함: "잘 모르겠습니다", "실수했습니다", "도움이 필요합니다", "솔직히 불안합니다"
-               제외: 사교적 겸손("아이고 별거 아닙니다"), 관용표현("죄송하지만 화면 공유 좀")
+               정의: 자신의 무지, 실수, 약점, 불안, 현재 겪는 어려움을 드러내는 행위
+               포함:
+               - V-1 현재 겪는 어려움이나 막막함: "어떻게 해야 할지조차 몰랐어요", "감도 안 와요"
+               - V-2 지식·경험 부족: "잘 모르겠어요", "이런 건 처음이라서", "개념 정도만 알아뒀었거든요"
+               - V-3 현재 몸 상태(피로, 통증, 수면, 건강 이상): "몸이 너무 무거워서", "3주째 계속 생겨서 약 바르고 있어요"
+               - V-4 고립감, 자기 평가 저하, 불안, 도움 요청의 어려움: "혼자 했다는 느낌", "부족한 점이 많다"
+               제외:
+               - V-X1 이미 극복하거나 해결한 어려움을 회고하는 말: "힘들었지만 결과물을 보면 많이 만들었고", "막혔는데 결국 해결했어요"
+               - V-X2 긍정적 평가나 만족 표현: "그 선택이 잘한 것 같아요"
+               - V-X3 사교적 겸손("아이고 별거 아닙니다"), 관용표현("죄송하지만 화면 공유 좀")
 
             2. constructiveDissent (Assertive Act — 사실/믿음에 대한 주장)
-               정의: 리더의 제안, 기존 방향, 현재 방식에 대해 다른 관점·우려·대안을 꺼내는 행위
-                     (근거가 짧거나 맥락상 암묵적이어도 포함)
-               포함: "다른 의견인데요", "그 방법보다는 이게 낫다고 봐요", "한 가지 우려가 있는데요",
-                     "그건 일정상 어려울 것 같은데, ~하면 어떨까요", "제 생각은 조금 다른데요"
-               제외: 이유나 대안 없이 감정만 드러내는 불만("이건 왜 이래요"), 인신공격, 감정적 반발
+               정의: 리더나 팀의 의견·제안·해석·기존 방향과 다른 입장을 꺼내는 행위. 형태는 묻지 않습니다.
+               포함:
+               - D-1 직접 반박이나 대안 제시: "그러면 [A]만 잘 수행할 거예요. 예시를 안 주는 게 나을 수 있어요"
+               - D-2 리더의 해석이나 사실 이해 정정: "그 '아니'랑 이 '아니'랑 다르죠", "일시적으론 그럴 수 있는데 오염이 많대요"
+               - D-3 돌려 말하거나 질문 형태로 꺼내는 다른 입장: "~않을까 싶어요", "근데 ~", "~가 더 나을 수도 있겠다", "비슷하지 않을까요?"
+               - D-4 팀이나 서비스의 기존 방향에 대한 다른 입장: "리더를 위한 기능만 있다는 생각에 반감이 있었어요"
+               제외:
+               - D-X1 리더의 의견에 동의하는 말. 리더가 부정적 의견을 냈고 멤버도 같은 방향의 부정적 의견을 말하면 동의이므로 D가 아닙니다.
+                 (예: 리더 "그 방식은 좀 별로인 것 같아요" → 멤버 "네, 저도 그건 별로라고 봐요" = 제외)
+               - D-X2 비교 대상(리더나 팀의 의견)이 없는 단순 불만("이건 왜 이래요"), 인신공격
+               판단 방법: 직전 리더 발화나 팀의 기존 방향을 먼저 확인하고, 멤버 문장이 그와 다른 입장인지로 판단하세요.
 
             3. initiative (Commissive Act — 미래 행동에 대한 자발적 제안)
-               정의: 지시 없이 자발적으로 '앞으로' 할 새로운 행동이나 아이디어를 제안하는 행위
-                     (아직 하지 않은 일·아직 정해지지 않은 일에 대한 미래 지향 발화만 해당)
-               포함: "제가 해볼게요", "이런 아이디어가 있는데", "제가 먼저 만들어보겠습니다",
-                     "다음엔 ~하는 방식으로 바꿔보면 어떨까요", "~ 같은 기능이 있으면 좋겠어요",
-                     "제가 테스트 스크립트 만들어볼게요", "이런 방법은 어떨까요"
-               제외: 지시에 대한 단순 수락("네 알겠습니다"), 이미 합의된/배정된 작업 재확인,
-                     이미 완료한 작업이나 성과 설명("~하는 방식으로 했거든요", "~해서 잡았어요" 등 과거형 보고)
+               정의: 지시 없이 꺼낸 아이디어나 행동 제안 가운데 '무엇을'과 '어떻게'가 드러나는 것
+               포함:
+               - I-1 자발적 실행 제안: "제가 먼저 만들어볼게요", "PR 올려서 리뷰 받아보고 싶어요"
+               - I-2 무엇을·어떻게가 드러나는 아이디어(가정형 포함): "관심 분야를 설정하면 자동으로 정리해주는 기능이요"
+               - I-3 개선 방식 제안: "개선사항은 이슈에 올리고 올렸다고 말해주면 좋겠어요"
+               제외:
+               - I-X1 '어떻게'가 없는 관심 표현: "CI/CD에 관심이 있어요"
+               - I-X2 과거 작업 경과 보고: "영어로 베이스를 깔고 형식만 교체하는 방식으로 했거든요"
+               - I-X3 이미 신청하거나 확정된 일정("다음 주 토요일에 가보려고요"). 이 내용은 promises에서 다룹니다.
+               - I-X4 지시에 대한 단순 수락("네 알겠습니다"), 이미 합의된 작업 재확인
 
-            분류 원칙 (recall 우선): 위 [제외] 항목(사교적 겸손/관용표현/단순 불만/단순 수락/합의된 작업 재확인)에
-            명백히 해당하는 경우만 빼고, 위험 감수 의도가 부분적으로라도 읽히면 포함하세요.
+            분류 원칙 (recall 우선): 위 제외 항목에 명백히 해당하는 경우만 빼고, 포함 항목에 부분적으로라도 해당하면 포함하세요.
             각 act에 confidence("high" 또는 "medium")를 부여하세요. 정의에 명확히 부합하면 high,
             맥락상 그렇게 읽히지만 다소 애매하면 medium으로 포함하세요.
-            전수 검토 (누락 금지): 전사본의 처음부터 끝까지 모든 멤버 발화를 하나씩 검토하세요. 대표 사례 몇 개만 고르고
-            멈추지 마세요. 유형별 개수 상한은 없으며, 해당하는 발화가 4회 이상이면 모두 포함하세요.
-            하나의 발화가 여러 유형에 동시에 해당하면(예: 우려 제기(D) + 대안 실행 제안(I)) 각 유형에 모두 포함하세요.
-            인용 규칙 (재현성): text는 해당 발화가 속한 전사 segment의 text를 자르거나 이어붙이지 말고 그대로 넣고,
-            timestamp는 그 segment의 start 값(초)을 그대로 쓰세요. 하나의 segment는 한 유형에 최대 1번만 인용하세요.
+            text에는 segment 전문이 아니라 근거가 되는 문장 하나만 원문 그대로 인용하고(여러 문장을 합치지 마세요),
+            timestamp는 그 문장이 속한 segment의 start 값(초)을 그대로 쓰세요.
+            rule에는 적용한 포함 규칙 ID(예: "V-3", "D-2")를 쓰세요.
 
             Step D. 발화 비율 추정
             전체 발화 분량(문자수)을 기준으로 리더/멤버 비율을 추정하세요.
@@ -151,37 +170,35 @@ public class AnalysisService {
 
             [Few-shot 예시]
 
-            예시 1 — vulnerability:
-            발화: "사실 이번 스프린트에서 제가 맡은 부분이 잘 안 돼서 좀 막막합니다"
-            분류: vulnerability / 근거: 자신의 어려움과 감정을 솔직히 드러내는 expressive act
+            예시 1 — 한 segment 안의 두 문장이 각각 V와 I에 해당:
+            리더: "요즘 배포 쪽은 어때요?"
+            멤버: "솔직히 쿠버네티스는 아직 잘 몰라서 막막해요. 그래서 스테이징에 먼저 띄워보면서 설정을 하나씩 정리해보려고요."
+            분류: 첫 문장 vulnerability(V-2), 둘째 문장 initiative(I-1) / 문장마다 따로 인용
 
-            예시 2 — constructiveDissent:
-            발화: "그 방식도 좋은데, 저는 API를 먼저 정리하고 가는 게 순서에 맞다고 봐요"
-            분류: constructiveDissent / 근거: 대안적 관점을 근거와 함께 제시하는 assertive act
+            예시 2 — 돌려 말하는 constructiveDissent:
+            리더: "이번 기능은 그냥 라이브러리 하나 붙이면 되지 않을까요?"
+            멤버: "음 그것도 되긴 하는데, 비용이 계속 나가서 지금 단계에서는 직접 짜는 게 낫지 않을까 싶어요."
+            분류: constructiveDissent(D-3) / 리더 제안과 다른 입장을 근거와 함께 돌려 말함
 
-            예시 3 — initiative:
-            발화: "제가 이번 주 안에 테스트 자동화 스크립트를 만들어보겠습니다"
-            분류: initiative / 근거: 지시 없이 자발적으로 미래 행동을 약속하는 commissive act
+            예시 3 — 제외 (리더의 부정적 의견에 동의):
+            리더: "회의가 너무 많아서 개발 시간이 부족한 것 같아요."
+            멤버: "네, 저도 회의가 좀 많다고 느꼈어요."
+            분류: 해당 없음(D-X1) / 리더와 같은 입장이므로 D가 아님
 
-            예시 4 — 제외 (사교적 겸손):
-            발화: "아 죄송합니다, 마이크가 안 켜져 있었네요"
-            분류: 해당 없음 / 근거: 상황적 사과로 자기 약점 표현이 아닌 관용표현
+            예시 4 — 제외 (극복한 어려움, 과거 작업 보고):
+            멤버: "처음엔 로그가 안 남아서 고생했는데 결국 원인 찾아서 고쳤어요. 그래서 지금은 캐시 레이어를 따로 두는 방식으로 바꿔놨어요."
+            분류: 해당 없음(V-X1, I-X2) / 해결한 어려움의 회고와 이미 끝난 작업 보고
 
-            예시 5 — 제외 (단순 수락):
-            발화: "네 알겠습니다, 그렇게 하겠습니다"
-            분류: 해당 없음 / 근거: 리더 지시에 대한 수락으로 자발적 제안이 아님
+            예시 5 — 제외 ('어떻게'가 없는 관심 표현, 단순 수락):
+            멤버: "보안 쪽에 관심은 있어요." / "네 알겠습니다, 그렇게 할게요."
+            분류: 해당 없음(I-X1, I-X4)
 
-            예시 6 — 제외 (완료한 성과 보고):
-            발화: "영어로 베이스를 깔고 형식만 교체하는 방식으로 했거든요"
-            분류: 해당 없음 / 근거: 이미 수행한 작업 설명으로, 미래 행동 제안(commissive)이 아님
-
-            반드시 아래 JSON 형식으로만 응답하세요.
-            speechActs의 각 배열 길이는 예시와 무관하게 실제 해당 발화 수와 같아야 합니다 (0개면 [], 5개면 5개).
+            반드시 아래 JSON 형식으로만 응답하세요. 배열 항목 수는 예시와 무관하게 실제로 찾은 만큼 넣으세요(0개도 가능):
             {
               "speechActs": {
-                "vulnerability": [{"text": "원문 그대로", "timestamp": 초단위_숫자, "confidence": "high 또는 medium"}, {"text": "...", "timestamp": ..., "confidence": "..."}, ...],
-                "constructiveDissent": [{"text": "원문 그대로", "timestamp": 초단위_숫자, "confidence": "high 또는 medium"}, {"text": "...", "timestamp": ..., "confidence": "..."}, ...],
-                "initiative": [{"text": "원문 그대로", "timestamp": 초단위_숫자, "confidence": "high 또는 medium"}, {"text": "...", "timestamp": ..., "confidence": "..."}, ...]
+                "vulnerability": [{"text": "해당 문장 원문 그대로", "timestamp": 초단위_숫자, "confidence": "high 또는 medium", "rule": "V-1"}],
+                "constructiveDissent": [{"text": "해당 문장 원문 그대로", "timestamp": 초단위_숫자, "confidence": "high 또는 medium", "rule": "D-3"}],
+                "initiative": [{"text": "해당 문장 원문 그대로", "timestamp": 초단위_숫자, "confidence": "high 또는 medium", "rule": "I-2"}]
               },
               "talkRatio": {"leaderRatio": 숫자, "memberRatio": 숫자},
               "topics": ["주제1", "주제2"],
@@ -410,6 +427,7 @@ public class AnalysisService {
 
         String step2Raw = geminiAdapter.chat(STEP2_SYSTEM, transcript);
         Map<String, Object> step2 = parseJson(step2Raw);
+        dedupeSpeechActsBySegment(step2);
         log.info("Step2(Gemini) 완료. meetingId={}", meetingId);
 
         String step3UserPrompt = buildStep3UserPrompt(step2, surveyScore, durationSec, prevPromises, context);
@@ -590,6 +608,21 @@ public class AnalysisService {
         int i = normalizeCount(listSize(speechActs != null ? speechActs.get("initiative") : null), durationSec);
         double score = SAFETY_BASELINE + bonusOf(V_BONUS, v) + bonusOf(D_BONUS, d) + bonusOf(I_BONUS, i);
         return Math.min(100.0, score);
+    }
+
+    // 세는 단위는 segment: 유형별로 같은 segment(timestamp)의 중복 인용은 첫 항목만 남긴다.
+    // LLM이 한 segment에서 문장을 여러 개 뽑아도 카운트가 부풀지 않도록 저장 전에 결정적으로 정리.
+    @SuppressWarnings("unchecked")
+    static void dedupeSpeechActsBySegment(Map<String, Object> step2) {
+        if (!(step2.get("speechActs") instanceof Map<?, ?> acts)) return;
+        for (Map.Entry<String, Object> e : ((Map<String, Object>) acts).entrySet()) {
+            if (!(e.getValue() instanceof List<?> list)) continue;
+            Set<Double> seen = new HashSet<>();
+            e.setValue(list.stream()
+                    .filter(i -> !(i instanceof Map<?, ?> m && m.get("timestamp") instanceof Number ts)
+                            || seen.add(ts.doubleValue()))
+                    .toList());
+        }
     }
 
     // adjusted_count = round(raw × 30 ÷ 미팅분). 길이를 모르면 원본 카운트 사용.
