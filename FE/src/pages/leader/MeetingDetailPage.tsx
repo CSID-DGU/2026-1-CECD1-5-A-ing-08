@@ -11,6 +11,8 @@ import EndMeetingModal from "@/components/ui/EndMeetingModal";
 import RecordingFloatingBar from "@/components/ui/RecordingFloatingBar";
 import AnalysisLoading from "@/components/loading/AnalysisLoading";
 import type { MeetingDetail } from "@/types/meeting";
+import { updateMeeting } from "@/api/meetings";
+import MeetingDateTimePicker, { getDefaultDate, getDefaultTime } from "@/components/ui/MeetingDateTimePicker";
 import LeaderReportView from "@/components/report/LeaderReportView";
 import IotPanel from "@/components/iot/IotPanel";
 import PreBriefingCard from "@/components/meeting/PreBriefingCard";
@@ -24,7 +26,7 @@ type LocalStatus = "pending" | "recording" | "uploading" | "analyzing" | "comple
 export default function MeetingDetailPage() {
   const { meetingId } = useParams<{ meetingId: string }>();
   const navigate = useNavigate();
-  const { meeting, loading, error } = useMeetingDetail(meetingId);
+  const { meeting, loading, error, setInfo } = useMeetingDetail(meetingId);
   const { data: briefing, loading: briefingLoading, error: briefingError, retry: retryBriefing } = usePreBriefing(meetingId);
   const recorder = useChunkedRecorder(meetingId ? Number(meetingId) : 0);
   const { upload } = useUploadRecording();
@@ -121,7 +123,7 @@ export default function MeetingDetailPage() {
     return (
       <PageLayout>
         <div className="flex flex-col h-full">
-          <MeetingHeader meeting={meeting} />
+          <MeetingHeader meeting={meeting} onSaved={setInfo} />
           <div className="flex-1 flex flex-col items-center justify-center px-8 gap-4 pb-32">
             <div className="w-10 h-10 border-4 border-[#5F74FA] border-t-transparent rounded-full animate-spin" />
             <p className="text-sm text-gray-600">녹음 파일을 업로드 중입니다...</p>
@@ -135,7 +137,7 @@ export default function MeetingDetailPage() {
     return (
       <PageLayout>
         <div className="flex flex-col">
-          <MeetingHeader meeting={meeting} />
+          <MeetingHeader meeting={meeting} onSaved={setInfo} />
           <div className="flex-1 flex flex-col items-center justify-center px-8 gap-4">
             <p className="text-base font-semibold text-red-500">
               {uploadError ?? '오류가 발생했습니다.'}
@@ -162,7 +164,7 @@ export default function MeetingDetailPage() {
     return (
       <PageLayout>
         <div className="flex flex-col">
-          <MeetingHeader meeting={meeting} />
+          <MeetingHeader meeting={meeting} onSaved={setInfo} />
           <AnalysisLoading
             role="leader"
             recordingDuration={recorder.elapsed}
@@ -178,7 +180,7 @@ export default function MeetingDetailPage() {
     return (
       <PageLayout>
         <div className="flex flex-col h-full">
-          <MeetingHeader meeting={meeting} />
+          <MeetingHeader meeting={meeting} onSaved={setInfo} />
           <LeaderReportView meetingId={meetingId!} />
         </div>
       </PageLayout>
@@ -191,7 +193,7 @@ export default function MeetingDetailPage() {
     <PageLayout>
       <div className="flex h-full">
         <div className="flex-1 flex flex-col h-full">
-          <MeetingHeader meeting={meeting} />
+          <MeetingHeader meeting={meeting} onSaved={setInfo} />
 
           {!recorder.isRecording && localStatus === "pending" && (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8 py-8 pb-32">
@@ -513,7 +515,9 @@ function MeetingNotes({ meetingId }: { meetingId: string }) {
   );
 }
 
-function MeetingHeader({ meeting }: { meeting: MeetingDetail }) {
+type MeetingInfo = Pick<MeetingDetail, "title" | "scheduledAt">;
+
+function MeetingHeader({ meeting, onSaved }: { meeting: MeetingDetail; onSaved: (info: MeetingInfo) => void }) {
   const dateStr = meeting.scheduledAt
     ? new Date(meeting.scheduledAt).toLocaleDateString("ko-KR", {
         year: "numeric",
@@ -521,13 +525,32 @@ function MeetingHeader({ meeting }: { meeting: MeetingDetail }) {
         day: "numeric",
       })
     : '일정 미정';
+  const title = meeting.title || `${meeting.memberName}님과의 1on1`;
+  const [editing, setEditing] = useState(false);
 
   return (
     <div className="px-8 pt-6 pb-4 border-b border-gray-200">
       <div className="flex items-baseline gap-3">
-        <h1 className="text-2xl font-bold">{meeting.title || `${meeting.memberName}님과의 1on1`}</h1>
+        <h1 className="text-2xl font-bold">{title}</h1>
         <span className="text-sm text-gray-400">{meeting.round}회차 · {dateStr}</span>
+        <button
+          onClick={() => setEditing(true)}
+          className="ml-auto self-center rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+        >
+          미팅 정보 수정
+        </button>
       </div>
+      {editing && (
+        <EditMeetingModal
+          meeting={meeting}
+          initialTitle={title}
+          onClose={() => setEditing(false)}
+          onSaved={(info) => {
+            onSaved(info);
+            setEditing(false);
+          }}
+        />
+      )}
       <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
         <span className="w-6 h-6 rounded-full bg-[#5F74FA] flex items-center justify-center text-white text-xs">
           {meeting.leaderName[0]}
@@ -538,6 +561,78 @@ function MeetingHeader({ meeting }: { meeting: MeetingDetail }) {
           {meeting.memberName[0]}
         </span>
         <span>{meeting.memberName}</span>
+      </div>
+    </div>
+  );
+}
+
+// 멤버 변경은 아직 미지원 — 제목·일정만 수정
+function EditMeetingModal({ meeting, initialTitle, onClose, onSaved }: {
+  meeting: MeetingDetail;
+  initialTitle: string;
+  onClose: () => void;
+  onSaved: (info: MeetingInfo) => void;
+}) {
+  const [title, setTitle] = useState(initialTitle);
+  // scheduledAt "YYYY-MM-DDTHH:mm:ss" → 날짜/시간 분리. 일정 미정이면 생성 모달과 같은 기본값
+  const [date, setDate] = useState(meeting.scheduledAt?.slice(0, 10) ?? getDefaultDate());
+  const [time, setTime] = useState(meeting.scheduledAt?.slice(11, 16) ?? getDefaultTime());
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const canSave = title.trim() !== "" && !saving;
+
+  const handleSave = async () => {
+    const info = { title: title.trim(), scheduledAt: `${date}T${time}:00` };
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await updateMeeting(meeting.meetingId, info);
+      onSaved(info);
+    } catch {
+      setSaveError("미팅 정보 수정에 실패했습니다. 다시 시도해주세요.");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div role="dialog" aria-modal="true" aria-labelledby="edit-meeting-title"
+        className="bg-white rounded-2xl shadow-xl w-[440px] p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 id="edit-meeting-title" className="text-xl font-bold">미팅 정보 수정</h2>
+          <button onClick={onClose} aria-label="닫기" className="text-gray-400 hover:text-gray-600 text-2xl">
+            &times;
+          </button>
+        </div>
+        <label className="block mb-4">
+          <span className="block font-semibold mb-2 text-sm">미팅 제목</span>
+          <input
+            value={title}
+            maxLength={100}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#4E62E6]"
+          />
+        </label>
+        <div className="mb-4">
+          <p className="font-semibold mb-2 text-sm">미팅 일정</p>
+          <MeetingDateTimePicker collapsible date={date} time={time} onDateChange={setDate} onTimeChange={setTime} />
+        </div>
+        <p className="text-xs text-gray-400 mb-4">미팅 상대: {meeting.memberName} (변경 불가)</p>
+        {saveError && <p className="text-sm text-red-500 text-right mb-2">{saveError}</p>}
+        <div className="flex justify-end gap-3">
+          <button onClick={onClose} className="px-6 py-2.5 rounded-lg border border-gray-200 text-sm hover:bg-gray-50">
+            취소
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!canSave}
+            className={`px-6 py-2.5 rounded-lg text-sm text-white transition-colors ${
+              canSave ? "bg-[#5F74FA] hover:bg-[#4E62E6]" : "bg-gray-300 cursor-not-allowed"
+            }`}
+          >
+            저장
+          </button>
+        </div>
       </div>
     </div>
   );

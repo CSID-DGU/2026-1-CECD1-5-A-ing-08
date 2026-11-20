@@ -155,6 +155,13 @@ export async function cancelMeeting(meetingId: number | string): Promise<void> {
   await apiClient.delete(`/api/v1/meetings/${meetingId}`);
 }
 
+export async function updateMeeting(
+  meetingId: number | string,
+  body: { title: string; scheduledAt: string | null },
+): Promise<void> {
+  await apiClient.patch(`/api/v1/meetings/${meetingId}`, body);
+}
+
 export async function submitSurvey(payload: SubmitSurveyPayload): Promise<void> {
   await apiClient.post<ApiResponse<void>>('/api/v1/surveys', payload);
 }

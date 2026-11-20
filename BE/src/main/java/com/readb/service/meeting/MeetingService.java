@@ -17,6 +17,7 @@ import com.readb.dto.meeting.MeetingCreateResponse;
 import com.readb.dto.meeting.MeetingDetailResponse;
 import com.readb.dto.meeting.MeetingListResponse;
 import com.readb.dto.meeting.MeetingStatusResponse;
+import com.readb.dto.meeting.MeetingUpdateRequest;
 import com.readb.dto.meeting.MemberReportResponse;
 import com.readb.dto.meeting.RecordingPayload;
 import com.readb.repository.CareerEventRepository;
@@ -99,13 +100,24 @@ public class MeetingService {
     public void analyzeTranscript(Long meetingId, Long leaderId, String transcript, Integer durationSec) {
         Meeting meeting = findMeeting(meetingId);
         validateOwner(meeting, leaderId);
-        validateUploadable(meeting);
+        // 반복 분석 테스트용으로 COMPLETED 미팅도 재분석 허용 — 진행 중일 때만 막는다
+        if (meeting.getStatus() == MeetingStatus.TRANSCRIBING || meeting.getStatus() == MeetingStatus.ANALYZING) {
+            throw new BusinessException(ErrorCode.ANALYSIS_IN_PROGRESS);
+        }
 
         meeting.updateStatus(MeetingStatus.ANALYZING);
         meetingRepository.save(meeting);
         log.info("Transcript accepted. meetingId={}", meetingId);
 
         analysisOrchestrator.startAnalysisFromTranscript(meetingId, transcript, durationSec);
+    }
+
+    // 분석 상태와 무관하게 리더가 제목·일정 수정 가능 (멤버 변경은 미지원)
+    @Transactional
+    public void updateMeeting(Long meetingId, Long leaderId, MeetingUpdateRequest request) {
+        Meeting meeting = findMeeting(meetingId);
+        validateOwner(meeting, leaderId);
+        meeting.updateInfo(request.title().trim(), request.scheduledAt());
     }
 
     // 예정 시각에 진행되지 않은 미팅 취소 = 삭제. 회차는 동적 계산이라 이후 미팅 회차가 자동으로 1씩 감소한다.

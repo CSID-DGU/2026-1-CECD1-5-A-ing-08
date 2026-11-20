@@ -38,5 +38,8 @@ export function useMeetingDetail(meetingId: string | undefined) {
       .finally(() => setLoading(false));
   }, [meetingId]);
 
-  return { meeting, loading, error };
+  const setInfo = (info: Pick<MeetingDetail, 'title' | 'scheduledAt'>) =>
+    setMeeting((m) => (m ? { ...m, ...info } : m));
+
+  return { meeting, loading, error, setInfo };
 }
