@@ -99,7 +99,10 @@ public class MeetingService {
     public void analyzeTranscript(Long meetingId, Long leaderId, String transcript, Integer durationSec) {
         Meeting meeting = findMeeting(meetingId);
         validateOwner(meeting, leaderId);
-        validateUploadable(meeting);
+        // 반복 분석 테스트용으로 COMPLETED 미팅도 재분석 허용 — 진행 중일 때만 막는다
+        if (meeting.getStatus() == MeetingStatus.TRANSCRIBING || meeting.getStatus() == MeetingStatus.ANALYZING) {
+            throw new BusinessException(ErrorCode.ANALYSIS_IN_PROGRESS);
+        }
 
         meeting.updateStatus(MeetingStatus.ANALYZING);
         meetingRepository.save(meeting);

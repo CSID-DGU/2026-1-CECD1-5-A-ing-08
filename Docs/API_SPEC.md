@@ -863,6 +863,7 @@ Content-Type: application/json
 ```
 
 > 녹음 업로드·STT를 건너뛰고 전달받은 스크립트로 7.1과 동일한 분석(Recording 저장 → 분석 → 상태 COMPLETED/FAILED)을 진행. 미팅 리더만 호출 가능.
+> 이미 분석이 끝난(COMPLETED) 미팅도 재호출하면 기존 분석 결과를 덮어써 재분석한다 (반복 분석 테스트용).
 
 **Request**
 ```json
@@ -886,7 +887,7 @@ Content-Type: application/json
 | INVALID_INPUT | 400 | transcript 누락/공백 |
 | FORBIDDEN | 403 | 미팅 리더가 아님 |
 | MEETING_NOT_FOUND | 404 | 존재하지 않는 미팅 |
-| ANALYSIS_IN_PROGRESS | 409 | 이미 분석이 진행 중인 미팅 |
+| ANALYSIS_IN_PROGRESS | 409 | 분석이 진행 중인 미팅 (TRANSCRIBING/ANALYZING) |
 
 ---
 
@@ -2258,3 +2259,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-10-31 | v3.6 | A.0 파이프라인 STT를 OpenAI `whisper-1` → Groq `whisper-large-v3`(OpenAI 호환 엔드포인트)로 교체. 환경변수 `OPENAI_API_KEY` → `GROQ_API_KEY`. API 요청·응답 형식 변경 없음. |
 | 2026-11-06 | v3.7 | `GET /members/me/speech-trend`(명세 외, v2.4에서 제거된 엔드포인트) 응답 필드 `dissentCount` → `constructiveDissentCount`. 집계 키를 `"dissent"` → `"constructiveDissent"`로 바로잡아 D 횟수가 항상 0이던 버그 수정. 내부 baseline 키 `prev_avg_dissent` → `prev_avg_constructiveDissent`. |
 | 2026-11-12 | v3.8 | `gaps.alignmentGap`: 서베이 `topic`을 전사와 실제로 비교하도록 수정 (기존엔 주제 문자열이 프롬프트에 전달되지 않음). 주제별 결과 단계를 PRD 점수표(0/25/40/60/85/100)로 서버에서 계산해 평균. `detail`은 주제별 한 줄(`\n` 구분), 전사에서 확인된 원문 인용·타임스탬프 포함(화자는 녹음 전사에 라벨이 없어 표시하지 않음). 서베이 주제가 없거나 무효·분석 실패 시 `score`·`detail` 모두 `null` (기존: 50, "서베이 정보 없음"). |
+| 2026-11-20 | v3.9 | 7.1-T `analyze-test`: COMPLETED 미팅도 재분석 허용 (TRANSCRIBING/ANALYZING일 때만 409). 재분석 시 기존 분석 결과 삭제 후 저장하며 `meeting_id` unique 충돌 수정. |
