@@ -1,14 +1,12 @@
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import Avatar from '@/components/ui/Avatar';
 import type { CareerStats } from '@/types/career';
 
 interface CareerProfileCardProps {
   stats: CareerStats;
   onEdit?: () => void;
-}
-
-function getInitial(name: string) {
-  return name.trim().charAt(0) || '멤';
+  imageUrl?: string | null;
 }
 
 function StatItem({ value, label }: { value: string | number; label: string }) {
@@ -20,7 +18,7 @@ function StatItem({ value, label }: { value: string | number; label: string }) {
   );
 }
 
-export default function CareerProfileCard({ stats, onEdit }: CareerProfileCardProps) {
+export default function CareerProfileCard({ stats, onEdit, imageUrl }: CareerProfileCardProps) {
   const displayJobTitle = stats.jobTitle?.trim() || '팀원';
   const displayAiSummary =
     stats.aiSummary?.trim() || `${stats.teamName}팀의 ${displayJobTitle} 입니다.`;
@@ -29,9 +27,7 @@ export default function CareerProfileCard({ stats, onEdit }: CareerProfileCardPr
     <Card>
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-base font-semibold text-white">
-            {getInitial(stats.name)}
-          </div>
+          <Avatar name={stats.name.trim() || '멤'} imageUrl={imageUrl} className="h-10 w-10 bg-emerald-500 text-base" />
 
           <div className="min-w-0">
             <h1 className="text-lg font-semibold leading-tight text-gray-950">{stats.name}</h1>

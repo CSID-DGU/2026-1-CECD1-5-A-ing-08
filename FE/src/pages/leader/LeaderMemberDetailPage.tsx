@@ -7,6 +7,7 @@ import CareerTimelineSection from '@/components/career/CareerTimelineSection';
 import ShowcaseSection from '@/components/career/ShowcaseSection';
 import { useCareerDashboard } from '@/features/member/useCareerDashboard';
 import { useMemberInsight } from '@/features/leader/useMemberInsight';
+import { useProfileImage } from '@/features/user/useProfileImage';
 import type {
   MemberInsightActionPlan,
   MemberInsightPromise,
@@ -168,6 +169,7 @@ export default function LeaderMemberDetailPage() {
   const { memberId } = useParams<{ memberId: string }>();
   const navigate = useNavigate();
   const { data: career, loading: careerLoading, errors: careerErrors } = useCareerDashboard(memberId);
+  const profileImageUrl = useProfileImage(memberId);
   const { data: insight, loading: insightLoading, error: insightError, toggleActionPlan } = useMemberInsight(memberId);
 
   const title = insight?.memberName ?? '멤버 상세';
@@ -194,7 +196,7 @@ export default function LeaderMemberDetailPage() {
         </div>
 
         {/* 커리어 포트폴리오 (멤버 화면 재사용) */}
-        {!careerLoading && career.stats && <CareerProfileCard stats={career.stats} />}
+        {!careerLoading && career.stats && <CareerProfileCard stats={career.stats} imageUrl={profileImageUrl} />}
         {!careerLoading && !careerErrors.showcase && <ShowcaseSection events={career.showcase} />}
         {!careerLoading && !careerErrors.timeline && <CareerTimelineSection events={career.timeline} />}
 

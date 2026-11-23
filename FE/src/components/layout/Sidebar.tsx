@@ -6,6 +6,7 @@ import { useLogout } from '@/features/auth/useLogout';
 import { useTeamMembers } from '@/features/team/useTeamMembers';
 import { useRenameTeam } from '@/features/team/useRenameTeam';
 import { useRegenerateInviteCode } from '@/features/team/useRegenerateInviteCode';
+import UserAvatar from '@/features/user/UserAvatar';
 
 interface NavItem {
   label: string;
@@ -295,9 +296,7 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                   <ul className="space-y-2 py-1">
                     {members.map((m) => (
                       <li key={m.id} className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-[10px] font-semibold">{m.name[0]}</span>
-                        </div>
+                        <UserAvatar userId={m.id} name={m.name} className="w-5 h-5 bg-emerald-500 text-[10px]" />
                         <div className="min-w-0">
                           <p className="text-xs font-medium text-gray-800 truncate">{m.name}</p>
                           {m.jobTitle && (
@@ -502,11 +501,7 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             onClick={() => setProfileMenuOpen((prev) => !prev)}
             disabled={!user}
           >
-            <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-semibold">
-                {user?.name?.[0] ?? '?'}
-              </span>
-            </div>
+            <UserAvatar userId={user?.id} name={user?.name ?? '?'} className="w-7 h-7 bg-emerald-500 text-xs" />
             {!isCollapsed && (
               <div className="min-w-0 text-left">
                 <p className="text-sm font-medium text-gray-800 truncate">

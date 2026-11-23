@@ -1,11 +1,14 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import axios from 'axios';
 import PageLayout from '@/components/layout/PageLayout';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useMe } from '@/features/auth/useMe';
 import { useAuthStore } from '@/stores/authStore';
-import { changePassword, updateProfile } from '@/api/user';
+import { changePassword, deleteProfileImage, updateProfile, uploadProfileImage } from '@/api/user';
+import UserAvatar from '@/features/user/UserAvatar';
+import { bumpProfileImage, useProfileImage } from '@/features/user/useProfileImage';
+import { resizeProfileImage } from '@/utils/resizeImage';
 
 // 회원가입(SignupRequest)과 같은 규칙
 const PASSWORD_RULE = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
@@ -101,6 +104,77 @@ function ProfileSection() {
   );
 }
 
+function ProfileImageSection() {
+  const user = useMe();
+  const currentUrl = useProfileImage(user?.id);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // 같은 파일을 다시 골라도 change가 일어나도록
+    if (!file || !user) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const resized = await resizeProfileImage(file);
+      await uploadProfileImage(resized);
+      bumpProfileImage(user.id);
+    } catch (err) {
+      setError(err instanceof Error && !axios.isAxiosError(err)
+        ? err.message
+        : serverMessage(err, '이미지를 올리지 못했습니다. 다시 시도해주세요.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!user) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteProfileImage();
+      bumpProfileImage(user.id);
+    } catch (err) {
+      setError(serverMessage(err, '이미지를 삭제하지 못했습니다. 다시 시도해주세요.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="rounded-xl border border-gray-200 p-5">
+      <h2 className="text-base font-semibold text-gray-900">프로필 이미지</h2>
+      <div className="mt-4 flex items-center gap-5">
+        <UserAvatar userId={user?.id} name={user?.name} className="h-24 w-24 bg-emerald-500 text-3xl" />
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Button type="button" size="sm" disabled={busy || !user} onClick={() => inputRef.current?.click()}>
+              {busy ? '처리 중...' : '사진 변경'}
+            </Button>
+            {currentUrl && (
+              <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={handleDelete}>
+                삭제
+              </Button>
+            )}
+          </div>
+          <p className="text-[11px] text-gray-400">JPG·PNG·WebP. 가운데를 정사각형으로 잘라 256×256으로 저장해요.</p>
+          {error && <p className="text-xs text-red-500">{error}</p>}
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={handleFile}
+        />
+      </div>
+    </section>
+  );
+}
+
 function PasswordSection() {
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -160,6 +234,7 @@ export default function SettingsPage() {
         <h1 className="text-xl font-bold text-gray-900">설정</h1>
         <p className="mt-1 text-sm text-gray-500">내 프로필과 계정 정보를 관리합니다.</p>
         <div className="mt-5 flex flex-col gap-4">
+          <ProfileImageSection />
           <ProfileSection />
           <PasswordSection />
         </div>

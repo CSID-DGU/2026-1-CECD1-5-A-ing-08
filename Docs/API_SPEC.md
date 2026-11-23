@@ -300,6 +300,46 @@ Authorization: Bearer <token>
 
 ---
 
+### 2.4 프로필 이미지
+
+FE가 업로드 전에 가운데를 정사각형으로 잘라 256×256으로 줄이고 WebP(미지원 브라우저는 JPEG)로 약 40KB 이하로 압축한다.
+서버는 최종 안전장치로 100KB까지 받고, 파일 형식은 확장자가 아니라 파일 내용(PNG·JPEG·WebP 시그니처)으로 판별한다.
+이미지는 `user_profile_images` 테이블에 저장한다.
+
+**업로드/교체**
+```
+PUT /api/v1/users/me/profile-image
+Authorization: Bearer <token>
+Content-Type: multipart/form-data   (파트 이름: image)
+```
+Response `200` — `data` 없음
+
+**삭제**
+```
+DELETE /api/v1/users/me/profile-image
+Authorization: Bearer <token>
+```
+Response `200` — `data` 없음 (이미지가 없어도 200)
+
+**조회**
+```
+GET /api/v1/users/{userId}/profile-image
+Authorization: Bearer <token>
+```
+- `200`: 이미지 바이트 그대로 (`Content-Type: image/webp|image/jpeg|image/png`, `Cache-Control: no-cache, private`)
+- `204`: 이미지 없음 → FE는 이름 첫 글자 아바타를 표시
+- 본인 또는 같은 팀 사람만 조회 가능. `<img src>`로는 인증 헤더를 보낼 수 없어 FE가 blob으로 받아 표시한다.
+
+**에러**
+| 코드 | HTTP | 상황 |
+|------|------|------|
+| INVALID_FILE_FORMAT | 400 | PNG·JPEG·WebP가 아님 |
+| PROFILE_IMAGE_TOO_LARGE | 413 | 100KB 초과 |
+| FORBIDDEN | 403 | 다른 팀 사람의 이미지 조회 |
+| USER_NOT_FOUND | 404 | 존재하지 않는 사용자 |
+
+---
+
 ## 3. TEAM
 
 ### 3.1 팀 생성 (리더 전용)
@@ -2050,6 +2090,7 @@ Authorization: Bearer <token> (LEADER)
 | `EMAIL_ALREADY_EXISTS` | 409 | 이미 사용 중인 이메일 |
 | `INVALID_CREDENTIALS` | 401 | 이메일 또는 비밀번호 불일치 |
 | `INVALID_CURRENT_PASSWORD` | 400 | 비밀번호 변경 시 현재 비밀번호 불일치 |
+| `PROFILE_IMAGE_TOO_LARGE` | 413 | 프로필 이미지 100KB 초과 |
 | `EXPIRED_TOKEN` | 401 | 액세스/리프레시 토큰 만료 |
 | `INVALID_TOKEN` | 401 | 유효하지 않은 토큰 |
 | `UNAUTHORIZED` | 401 | 인증이 필요합니다 |
@@ -2429,3 +2470,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-11-23 | v4.3 | **3.2b절 신규**: `PATCH /teams/{teamId}` 팀 이름 변경 (해당 팀 리더 전용, 2~30자). |
 | 2026-11-23 | v4.4 | 1.2 refreshToken 만료 14일 → 12시간. 1.3 갱신 응답을 실코드 기준 `accessToken`만으로 정정. 인증 실패 시 403(본문 없음) → 401 `UNAUTHORIZED`. FE 토큰 저장소 localStorage → sessionStorage. |
 | 2026-11-23 | v4.5 | **3.2c절 신규**: `POST /teams/{teamId}/invite-code` 초대 코드 재발급 (해당 팀 리더 전용, 기존 코드 즉시 무효). |
+| 2026-11-23 | v4.6 | **2.4절 신규**: 프로필 이미지 업로드·삭제·조회 (`/users/me/profile-image`, `/users/{userId}/profile-image`). DB: `user_profile_images` 테이블 추가 (`BE/db/migrations/2026-11-23_user_profile_images.sql`). |

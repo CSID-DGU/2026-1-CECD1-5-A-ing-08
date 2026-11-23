@@ -5,6 +5,7 @@ import apiClient from "@/api/client";
 import type { ApiResponse } from "@/api/types";
 import MeetingDateTimePicker, { getDefaultDate, getDefaultTime } from "@/components/ui/MeetingDateTimePicker";
 
+import UserAvatar from "@/features/user/UserAvatar";
 interface TeamMemberApi {
   id: number;
   name: string;
@@ -129,9 +130,7 @@ export default function CreateMeetingModal({ isOpen, onClose, onCreated }: Props
                     onChange={() => setSelected(m)}
                     className="accent-brand"
                   />
-                  <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white text-xs font-bold">
-                    {m.name[0]}
-                  </div>
+                  <UserAvatar userId={m.id} name={m.name} className="w-8 h-8 bg-brand text-xs font-bold" />
                   <div>
                     <p className="text-sm font-medium">{m.name}</p>
                     <p className="text-xs text-gray-400">{m.jobTitle}</p>
