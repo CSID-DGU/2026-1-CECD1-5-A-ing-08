@@ -162,7 +162,7 @@ surveyScore = clamp(0, 100, energyLevel × 20 + Σ issue_adjustments)
 5/18 데모는 **회원가입 ~ STT 변환까지는 실데이터**, 대시보드/분석 결과는 **Mock**으로 진행.
 
 **구현 방식 — Spring `@Profile` 분기**
-- BE1이 `MockAdapter` 구현체를 `@Profile("mock")` 으로 제공
+- `MockAdapter` 구현체를 `@Profile("mock")` 으로 제공
   - `MockLlmAdapter`, `MockRagAdapter` 등이 미리 정의된 Speech Act/스코어 응답을 즉시 반환
 - 5/20에 `@Profile("prod")` 로 실 AI 파이프라인 구현체로 교체
   - `ClaudeAdapter`, `GeminiAdapter`, `PgVectorAdapter` 활성화
@@ -173,61 +173,61 @@ surveyScore = clamp(0, 100, energyLevel × 20 + Σ issue_adjustments)
 - Adapter Pattern 원칙(인터페이스 분리)을 이미 채택했기 때문에 Mock↔Prod 교체 비용이 거의 0.
 - 5/20 전환은 Profile 한 줄 변경 + 환경변수(API 키) 주입만으로 완료.
 
-## 디렉토리 구조 + 담당자
+## 디렉토리 구조
 
 ```
 src/main/java/com/readb/
 │
 ├── config/                    # [공유] 둘 다 수정 가능하나 사전 공유 필수
-│   ├── SecurityConfig.java        ← BE2
-│   ├── CorsConfig.java            ← BE2
-│   ├── AsyncConfig.java           ← BE1
-│   └── SwaggerConfig.java         ← BE2
+│   ├── SecurityConfig.java
+│   ├── CorsConfig.java
+│   ├── AsyncConfig.java
+│   └── SwaggerConfig.java
 │
 ├── domain/                    # [공유] 엔티티 추가/수정 시 반드시 상대방에게 알린 후 작업
 │   ├── user/
-│   │   └── User.java              ← BE2
+│   │   └── User.java
 │   ├── team/
-│   │   └── Team.java              ← BE2
+│   │   └── Team.java
 │   ├── meeting/
-│   │   └── Meeting.java           ← BE1
+│   │   └── Meeting.java
 │   ├── recording/
-│   │   └── Recording.java         ← BE1
+│   │   └── Recording.java
 │   ├── survey/
-│   │   └── Survey.java            ← BE2
+│   │   └── Survey.java
 │   ├── analysis/
-│   │   └── Analysis.java          ← BE1
+│   │   └── Analysis.java
 │   └── promise/
-│       └── Promise.java           ← BE1
+│       └── Promise.java
 │
-├── repository/                # [각자 담당 엔티티의 레포지토리만 작성]
-│   ├── UserRepository.java        ← BE2
-│   ├── TeamRepository.java        ← BE2
-│   ├── MeetingRepository.java     ← BE1
-│   ├── RecordingRepository.java   ← BE1
-│   ├── SurveyRepository.java      ← BE2
-│   ├── AnalysisRepository.java    ← BE1
-│   └── PromiseRepository.java     ← BE1
+├── repository/
+│   ├── UserRepository.java
+│   ├── TeamRepository.java
+│   ├── MeetingRepository.java
+│   ├── RecordingRepository.java
+│   ├── SurveyRepository.java
+│   ├── AnalysisRepository.java
+│   └── PromiseRepository.java
 │
 ├── service/                   # [핵심 분리 영역 — 절대 상대 파일 건드리지 않기]
 │   ├── auth/
-│   │   └── AuthService.java       ← BE2 전담
+│   │   └── AuthService.java
 │   ├── user/
-│   │   └── UserService.java       ← BE2 전담
+│   │   └── UserService.java
 │   ├── team/
-│   │   └── TeamService.java       ← BE2 전담
+│   │   └── TeamService.java
 │   ├── meeting/
-│   │   └── MeetingService.java    ← BE1 전담
+│   │   └── MeetingService.java
 │   ├── survey/
-│   │   └── SurveyService.java     ← BE2 전담
+│   │   └── SurveyService.java
 │   ├── analysis/
-│   │   ├── AnalysisOrchestrator.java  ← BE1 전담 (핵심 파이프라인)
-│   │   ├── AnalysisService.java       ← BE1 전담
-│   │   └── PromiseService.java        ← BE1 전담
+│   │   ├── AnalysisOrchestrator.java  ← 핵심 파이프라인
+│   │   ├── AnalysisService.java
+│   │   └── PromiseService.java
 │   └── storage/
-│       └── FileStorageService.java    ← BE2 전담 (Supabase Storage 업/다운)
+│       └── FileStorageService.java  ← Supabase Storage 업/다운
 │
-├── adapter/                   # [BE1 전담 — BE2 절대 수정 금지]
+├── adapter/
 │   ├── stt/
 │   │   ├── SttAdapter.java            (인터페이스)
 │   │   └── GroqWhisperAdapter.java        (구현체)
@@ -239,56 +239,47 @@ src/main/java/com/readb/
 │       ├── RagAdapter.java            (인터페이스)
 │       └── PgVectorAdapter.java       (구현체 — pgvector on Supabase)
 │
-├── controller/                # [각자 담당 API만 작성 — 파일 단위로 분리]
-│   ├── AuthController.java        ← BE2 전담
-│   ├── UserController.java        ← BE2 전담
-│   ├── TeamController.java        ← BE2 전담
-│   ├── SurveyController.java      ← BE2 전담
-│   ├── MeetingController.java     ← BE1 전담
-│   ├── AnalysisController.java    ← BE1 전담
-│   ├── LeaderController.java      ← BE1 전담 (radar, blockers, promises)
-│   └── MemberController.java      ← BE1 전담 (career-memory)
+├── controller/
+│   ├── AuthController.java
+│   ├── UserController.java
+│   ├── TeamController.java
+│   ├── SurveyController.java
+│   ├── MeetingController.java
+│   ├── AnalysisController.java
+│   ├── LeaderController.java  ← radar, blockers, promises
+│   └── MemberController.java  ← career-memory
 │
-├── dto/                       # [각자 담당 컨트롤러의 DTO만 작성]
-│   ├── auth/                      ← BE2
-│   ├── user/                      ← BE2
-│   ├── team/                      ← BE2
-│   ├── survey/                    ← BE2
-│   ├── meeting/                   ← BE1
-│   └── analysis/                  ← BE1
+├── dto/
+│   ├── auth/
+│   ├── user/
+│   ├── team/
+│   ├── survey/
+│   ├── meeting/
+│   └── analysis/
 │
 └── common/                    # [공유] 수정 전 반드시 상대방에게 알릴 것
     ├── exception/
-    │   ├── GlobalExceptionHandler.java  ← BE2 초기 작성, 이후 공유
-    │   └── ErrorCode.java               ← 공유 (enum 추가만, 기존 값 수정 금지)
+    │   ├── GlobalExceptionHandler.java
+    │   └── ErrorCode.java               ← enum 값 추가는 자유, 기존 값 변경은 PR에 명시
     ├── response/
-    │   └── ApiResponse.java             ← BE2 초기 작성, 이후 수정 금지
+    │   └── ApiResponse.java             ← 구조 변경은 PR에 명시
     └── util/
-        └── JwtUtil.java                 ← BE2 전담
+        └── JwtUtil.java
 ```
 
-## 팀 역할 요약
+## 작업 방식
 
-### BE1 (PM 겸 AI 파이프라인)
-- 담당 도메인: Meeting, Recording, Analysis, Promise
-- 핵심 업무: Adapter 설계, LLM 프롬프트, 분석 오케스트레이터, 리더/멤버 결과 API
-- 소유 패키지: adapter/*, service/analysis/*, service/meeting/*, controller/Meeting*, controller/Analysis*, controller/Leader*, controller/Member*
+팀원 모두 BE·FE 구분 없이 풀스택으로 개발한다. 파일·도메인·API를 BE1/BE2처럼 역할로 나누지 않는다.
 
-### BE2 (인증 + CRUD + 인프라)
-- 담당 도메인: User, Team, Survey
-- 핵심 업무: JWT 인증, 유저/팀 CRUD, 서베이, 파일 업로드, 공통 에러 처리
-- 소유 패키지: config/Security*, service/auth/*, service/user/*, service/team/*, service/survey/*, service/storage/*, controller/Auth*, controller/User*, controller/Team*, controller/Survey*
+0. **상대 파일 수정 금지 (이니셜 기준)**: 담당은 BE/FE가 아니라 브랜치에 적힌 이니셜(`feat/<이니셜>/...`)로 구분한다. 다른 이니셜의 브랜치와 그 브랜치에서 작업 중인 파일은 수정하지 않는다. 수정이 필요하면 슬랙/디코로 해당 팀원에게 먼저 공유한다.
+1. **domain/ 엔티티 변경**: 컬럼 추가·삭제 시 `db/schema.sql`과 `db/migrations/YYYY-MM-DD_*.sql`을 함께 갱신하고 PR 본문에 명시한다. `ddl-auto: validate`라 운영 DB에 마이그레이션을 먼저 적용해야 서버가 뜬다.
+2. **common/ 변경**: ErrorCode enum에 값 추가는 자유. 기존 값 변경·삭제나 ApiResponse 구조 변경은 FE 파싱에 영향을 주므로 PR에 명시한다.
+3. **application.yml 분리**: 공통 설정은 application.yml, 개인 설정은 application-local.yml (.gitignore). API 키는 환경변수로.
+4. **API 변경**: 요청·응답 형식이 바뀌면 같은 PR에서 `Docs/API_SPEC.md`와 FE 호출부를 함께 고친다.
+5. **브랜치 네이밍**: `feat/<이니셜>/<주제>`, `fix/<이니셜>/<주제>` (예: `feat/js/team-health-trend-chart`).
+6. **PR 머지 순서**: domain/ 또는 common/ 변경이 포함된 PR은 먼저 머지하고, 다른 브랜치는 main을 받아 rebase 후 작업을 계속한다.
 
-## 충돌 방지 규칙
-
-1. **파일 단위 소유권**: 위 구조에서 ← 표시된 담당자만 해당 파일 수정. 상대 파일 수정 필요 시 슬랙/디코 먼저 공유.
-2. **domain/ 엔티티 수정 프로토콜**: 필드 추가/삭제 시 반드시 상대에게 알린 후 작업. 엔티티는 양쪽 서비스가 참조하므로 가장 충돌이 잘 남.
-3. **common/ 수정 프로토콜**: ErrorCode enum에 값 추가는 자유. 기존 값 변경/삭제는 금지. ApiResponse 구조 변경은 합의 후.
-4. **application.yml 분리**: 공통 설정은 application.yml, 개인 설정은 application-local.yml (.gitignore). API 키는 환경변수로.
-5. **브랜치 네이밍**: `feat/be1-whisper-adapter`, `feat/be2-auth-jwt` — 접두사로 담당자 구분.
-6. **PR 머지 순서**: domain/ 또는 common/ 변경이 포함된 PR은 먼저 머지. 이후 상대방이 pull 받고 자기 브랜치 rebase 후 작업 계속.
-
-## API 엔드포인트 소유권 (2026-05-08 이후 확정)
+## API 엔드포인트 (2026-05-08 기준, 최신 목록은 Docs/API_SPEC.md)
 
 **전 경로 `/api/v1/` 접두사 적용.** 공통 응답 래퍼:
 ```json
@@ -296,7 +287,7 @@ src/main/java/com/readb/
 ```
 
 ```
-# BE2 소유
+# 인증·유저·팀·서베이
 POST   /api/v1/auth/signup
 POST   /api/v1/auth/login
 GET    /api/v1/users/me
@@ -305,7 +296,7 @@ GET    /api/v1/teams/{teamId}/members
 POST   /api/v1/surveys                          (사전 서베이 제출)
 GET    /api/v1/surveys?meetingId=               (서베이 조회)
 
-# BE1 소유
+# 미팅·분석·리더/멤버
 POST   /api/v1/meetings                         (미팅 생성)
 POST   /api/v1/meetings/{id}/recording          (녹음 업로드 → 비동기 분석)
 GET    /api/v1/meetings/{id}/status             (분석 진행 상태)
@@ -322,18 +313,15 @@ GET    /api/v1/member/feedback?meetingId=       (코칭 피드백 카드)
 - `GET /api/leader/blockers` → `GET /api/v1/teams/{teamId}/blocker-pyramid` 명칭/경로 변경
 - 응답은 위 공통 래퍼로 통일 (FE 파싱 일관성)
 
-## DB 스키마 소유권
+## DB 스키마 (최신 정의는 BE/db/schema.sql)
 
 ```sql
--- BE2 담당 (초기 생성 + 유지)
 users       (id, email, password_hash, name, role, team_id, created_at)
 teams       (id, name, leader_id, created_at)
 surveys     (id, meeting_id, member_id, scores JSONB, submitted_at)
 
--- BE2 추가 필드
 -- users 테이블에 churned_at TIMESTAMP NULL 컬럼 추가 (향후 퇴사 예측 모델용)
 
--- BE1 담당 (초기 생성 + 유지)
 meetings    (id, team_id, leader_id, member_id, status, created_at)
 recordings  (id, meeting_id, file_url, duration_sec, transcript TEXT, created_at)
 analyses    (id, meeting_id,
