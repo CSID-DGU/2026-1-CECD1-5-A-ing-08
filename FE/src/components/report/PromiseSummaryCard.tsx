@@ -13,7 +13,7 @@ export interface PromiseSummaryCardProps {
 function RoleTag({ role }: { role: 'leader' | 'member' }) {
   return (
     <span
-      className={`text-xs font-medium ${role === 'leader' ? 'text-violet-500' : 'text-teal-500'}`}
+      className={`text-xs font-medium ${role === 'leader' ? 'text-brand' : 'text-teal-500'}`}
     >
       {role === 'leader' ? '리더' : '멤버'}
     </span>

@@ -28,7 +28,7 @@ export default function ActionPlanSection({ items, completed, errorId, onToggle 
                   type="checkbox"
                   checked={done}
                   onChange={() => onToggle(item.planId, done)}
-                  className="mt-0.5 w-4 h-4 accent-[#5F74FA] flex-shrink-0"
+                  className="mt-0.5 w-4 h-4 accent-brand flex-shrink-0"
                 />
                 <span
                   className={`text-sm text-gray-700 ${done ? 'line-through text-gray-400' : ''}`}

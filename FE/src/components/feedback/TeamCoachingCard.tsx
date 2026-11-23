@@ -14,7 +14,7 @@ function TeamCoachingCardContent({ data }: { data: TeamCoachingData }) {
         팀 코칭
       </p>
 
-      <div className="bg-gray-50 rounded-lg px-4 py-3 mb-4">
+      <div className="mb-4">
         <p className="text-sm text-gray-700">{data.overallAssessment}</p>
       </div>
 
@@ -35,7 +35,7 @@ function TeamCoachingCardContent({ data }: { data: TeamCoachingData }) {
       </p>
       <div className="flex flex-col gap-2">
         {data.suggestedActions.map((action, i) => (
-          <div key={i} className="flex items-start gap-2 bg-gray-50 rounded-lg px-3 py-2">
+          <div key={i} className="flex items-start gap-2">
             <span className="text-sm font-medium text-teal-600 flex-shrink-0">{i + 1}.</span>
             <p className="text-sm text-gray-700">{action}</p>
           </div>
@@ -51,7 +51,7 @@ export default function TeamCoachingCard({ data, variant = 'standalone' }: Props
   }
 
   return (
-    <Card className="mb-5 p-5">
+    <Card className="mb-6 border-b border-line pb-6">
       <TeamCoachingCardContent data={data} />
     </Card>
   );

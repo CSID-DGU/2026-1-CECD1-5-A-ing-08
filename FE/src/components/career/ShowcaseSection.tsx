@@ -10,7 +10,7 @@ function ShowcaseCard({ event }: { event: CareerEvent }) {
   const meta = getCareerTypeMeta(event.type);
 
   return (
-    <article className="rounded-lg border border-gray-200 bg-white p-3">
+    <article className="border-t border-line pt-3">
       <div className="flex items-center justify-between gap-3">
         <span className={`border-l-2 pl-2 text-xs font-medium ${meta.badgeClassName}`}>
           {meta.label}
@@ -37,19 +37,19 @@ export default function ShowcaseSection({ events }: ShowcaseSectionProps) {
   const showcaseEvents = events.slice(0, 5);
 
   return (
-    <section className="rounded-lg border border-gray-100 bg-white p-4 sm:p-5">
+    <section className="border-t border-line pt-7">
       <div className="mb-3 flex items-center gap-2">
         <h2 className="text-base font-semibold text-gray-950">나의 핵심 성과</h2>
       </div>
 
       {showcaseEvents.length > 0 ? (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid gap-x-8 gap-y-5 lg:grid-cols-2">
           {showcaseEvents.map((event) => (
             <ShowcaseCard key={event.careerEventId} event={event} />
           ))}
         </div>
       ) : (
-        <Card className="rounded-lg p-6">
+        <Card className="py-4">
           <p className="text-sm font-medium text-slate-500">표시할 핵심 성과가 아직 없습니다.</p>
         </Card>
       )}

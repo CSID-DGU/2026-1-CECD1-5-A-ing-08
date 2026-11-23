@@ -62,7 +62,7 @@ export default function AnalysisLoading({ role, recordingDuration, meetingId, on
               key={tab}
               className={`pb-2 text-sm font-medium ${
                 i === 0
-                  ? "border-b-2 border-[#5F74FA] text-[#5F74FA]"
+                  ? "border-b-2 border-brand text-brand"
                   : "text-gray-400"
               }`}
             >
@@ -74,7 +74,7 @@ export default function AnalysisLoading({ role, recordingDuration, meetingId, on
 
       {/* 메인 안내 */}
       <div className="flex-1 flex flex-col items-center justify-center px-8 m-3">
-        <h2 className="text-lg font-bold text-[#5F74FA] mb-2">
+        <h2 className="text-lg font-bold text-brand mb-2">
           1on1 미팅 분석중
         </h2>
         <p className="text-sm text-gray-500 text-center mb-1">
@@ -130,7 +130,7 @@ export default function AnalysisLoading({ role, recordingDuration, meetingId, on
                   key={i}
                   className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
                     active
-                      ? "border-[#5F74FA] bg-white shadow-sm"
+                      ? "border-brand bg-white shadow-sm"
                       : done
                         ? "border-green-200 bg-green-50"
                         : "border-gray-100 bg-gray-50"
@@ -140,7 +140,7 @@ export default function AnalysisLoading({ role, recordingDuration, meetingId, on
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
                         active
-                          ? "bg-[#5F74FA] text-white"
+                          ? "bg-brand text-white"
                           : done
                             ? "bg-green-400 text-white"
                             : "bg-gray-200 text-gray-400"
@@ -152,7 +152,7 @@ export default function AnalysisLoading({ role, recordingDuration, meetingId, on
                       {s.label}
                     </span>
                   </div>
-                  {active && <span className="text-xs text-[#5F74FA] font-medium">진행 중</span>}
+                  {active && <span className="text-xs text-brand font-medium">진행 중</span>}
                   {done && <span className="text-xs text-green-500 font-medium">완료</span>}
                 </div>
               );
@@ -160,7 +160,7 @@ export default function AnalysisLoading({ role, recordingDuration, meetingId, on
           </div>
 
           {/* 위트 카피 */}
-          <div className="bg-purple-50 rounded-xl p-4 text-center">
+          <div className="bg-brand-soft rounded-xl p-4 text-center">
             <p className="text-sm text-gray-600 italic">{wittyMessage}</p>
           </div>
         </div>

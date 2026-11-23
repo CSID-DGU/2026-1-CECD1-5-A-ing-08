@@ -8,5 +8,8 @@ public record TeamDashboardResponse(
         String trend,
         List<String> alerts,
         Double trendDelta,
-        String statusNote
-) {}
+        String statusNote,
+        List<MonthlyHealth> monthlyTrend
+) {
+    public record MonthlyHealth(String month, double score) {}
+}

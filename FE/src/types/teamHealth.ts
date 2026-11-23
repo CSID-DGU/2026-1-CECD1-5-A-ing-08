@@ -7,4 +7,5 @@ export interface TeamHealthScoreData {
   alerts: string[];
   trendDelta?: number | null;
   statusNote?: string | null;
+  monthlyTrend?: { month: string; score: number }[];
 }

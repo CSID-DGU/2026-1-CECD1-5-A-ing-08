@@ -6,6 +6,28 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // ReadB 색 체계. 값은 styles/globals.css의 --rb-* 와 동일하게 유지.
+        brand: {
+          DEFAULT: '#7185F2',
+          hover: '#5A6FE0',
+          soft: '#EEF0FD',
+        },
+        ink: {
+          DEFAULT: '#1A1D29',
+          secondary: '#6B7080',
+          muted: '#9A9EAB',
+        },
+        line: '#E6E8EE',
+        canvas: '#F7F8FA',
+        risk: {
+          DEFAULT: '#D64545',
+          soft: '#FBECEC',
+        },
+        caution: {
+          DEFAULT: '#C98A1B',
+          soft: '#FBF3E4',
+          strong: '#8A5D0F',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         primary: {

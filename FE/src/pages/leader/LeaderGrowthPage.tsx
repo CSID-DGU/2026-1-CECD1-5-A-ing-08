@@ -116,7 +116,7 @@ function CoachingExecutionCard({
   const list = open === 'completed' ? completedItems : open === 'pending' ? pendingItems : [];
 
   return (
-    <Card className="p-5">
+    <Card className="border-t border-line pt-5">
       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">코칭 실행률</p>
       <p className="mt-1 text-xs text-gray-400">미팅 후 제안된 액션 플랜 중 실제로 실행한 비율</p>
 
@@ -166,7 +166,7 @@ function CoachingExecutionCard({
                 list.map((item) => (
                   <li
                     key={item.planId}
-                    className="flex items-start gap-2 rounded-lg border border-gray-100 px-3 py-2"
+                    className="flex items-start gap-2 py-1.5"
                   >
                     <span
                       className={`mt-0.5 flex-shrink-0 text-sm ${
@@ -237,16 +237,16 @@ export default function LeaderGrowthPage() {
         )}
 
         {!loading && error && (
-          <Card className="mt-5 p-5">
+          <Card className="mt-5">
             <p className="text-sm font-medium text-gray-400">{error}</p>
           </Card>
         )}
 
         {!loading && !error && data && (
-          <div className="mt-5 flex flex-col gap-4">
+          <div className="mt-5 flex flex-col gap-8">
             {/* 핵심 인사이트: 리더 행동 변화 → 팀 신호 변화 */}
             {data.keyInsight && (
-              <Card className="border border-teal-200 bg-teal-50 p-5">
+              <Card className="rounded-lg bg-teal-50 p-5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
                   나의 변화가 만든 팀의 변화
                 </p>
@@ -260,16 +260,16 @@ export default function LeaderGrowthPage() {
             {data.highlights.length > 0 && (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {data.highlights.map((h) => (
-                  <Card key={h} className="p-4">
+                  <Card key={h} className="border-l-2 border-line pl-3">
                     <p className="text-sm font-semibold leading-relaxed text-gray-800">{h}</p>
                   </Card>
                 ))}
               </div>
             )}
 
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-x-10 gap-y-8 lg:grid-cols-2">
               {/* 발화 비율 추이 */}
-              <Card className="p-5">
+              <Card className="border-t border-line pt-5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                   내 발화 비율 추이
                 </p>
@@ -290,7 +290,7 @@ export default function LeaderGrowthPage() {
               </Card>
 
               {/* 팀 안전감 신호 추이 */}
-              <Card className="p-5">
+              <Card className="border-t border-line pt-5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                   팀 안전감 신호 추이
                 </p>
@@ -302,7 +302,7 @@ export default function LeaderGrowthPage() {
                     <TrendRows
                       points={data.teamSafetyTrend}
                       unit="점"
-                      colorOf={() => 'bg-indigo-400'}
+                      colorOf={() => 'bg-brand/60'}
                     />
                   ) : (
                     <TrendEmpty message="아직 분석 완료된 미팅이 없습니다." />
@@ -311,7 +311,7 @@ export default function LeaderGrowthPage() {
               </Card>
 
               {/* 1on1 운영 규칙성 */}
-              <Card className="p-5">
+              <Card className="border-t border-line pt-5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                   1on1 운영 규칙성
                 </p>

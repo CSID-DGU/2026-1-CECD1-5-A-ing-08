@@ -129,7 +129,7 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirst
         <p className="mt-4 text-center text-base tracking-wide text-slate-400">{scheduledDate}요일</p>
       )}
 
-      <Card className="mt-10 w-full rounded-[20px] border-gray-200 px-9 py-9 shadow-sm">
+      <Card className="mt-10 w-full">
         <div className="space-y-10">
           {SURVEY_QUESTIONS.map((q) => (
             <section key={q.id}>
@@ -148,7 +148,7 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirst
                       }}
                       className={`flex aspect-square min-h-[72px] flex-col items-center justify-center rounded-[16px] border text-center text-xs font-bold transition-colors whitespace-pre-line ${
                         isSelected
-                          ? 'border-violet-500 bg-violet-50 text-violet-700 shadow-[0_0_0_1px_rgba(139,92,246,0.9)]'
+                          ? 'border-brand bg-brand-soft text-brand shadow-[0_0_0_1px_rgba(113,133,242,0.9)]'
                           : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
                       }`}
                     >
@@ -174,7 +174,7 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirst
               maxLength={200}
               rows={3}
               placeholder="예: 다음 분기 프로젝트 역할, 업무량 조정"
-              className="mt-5 w-full resize-none rounded-[16px] border border-slate-200 px-4 py-3 text-sm text-gray-900 placeholder:text-slate-400 focus:border-violet-500 focus:outline-none"
+              className="mt-5 w-full resize-none rounded-[16px] border border-slate-200 px-4 py-3 text-sm text-gray-900 placeholder:text-slate-400 focus:border-brand focus:outline-none"
             />
           </section>
 
@@ -185,7 +185,7 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirst
               disabled={!canSubmit || isSubmitting}
               className={`h-14 w-full text-base ${
                 canSubmit
-                  ? 'bg-gray-900 text-white hover:bg-gray-700'
+                  ? 'bg-brand text-white hover:bg-brand-hover'
                   : 'bg-slate-100 text-slate-400 hover:bg-slate-100 disabled:opacity-100'
               }`}
             >

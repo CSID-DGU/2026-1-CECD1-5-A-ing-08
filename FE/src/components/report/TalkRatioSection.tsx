@@ -22,7 +22,7 @@ export default function TalkRatioSection({ data }: Props) {
           </div>
           <div className="relative w-full h-4 rounded-full bg-gray-100 overflow-visible">
             <div
-              className="h-full rounded-l-full bg-[#5F74FA] transition-all"
+              className="h-full rounded-l-full bg-brand transition-all"
               style={{ width: `${leaderRatio}%` }}
             />
             {/* Recommended leader ratio marker */}

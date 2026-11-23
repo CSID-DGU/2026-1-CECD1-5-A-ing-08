@@ -26,7 +26,7 @@ export default function EndMeetingModal({ isOpen, onClose, onEnd }: Props) {
           </button>
           <button
             onClick={onEnd}
-            className="px-6 py-2.5 rounded-lg text-sm text-white bg-[#5F74FA] hover:bg-[#4E62E6]"
+            className="px-6 py-2.5 rounded-lg text-sm text-white bg-brand hover:bg-brand-hover"
           >
             1on1 미팅 종료하기
           </button>

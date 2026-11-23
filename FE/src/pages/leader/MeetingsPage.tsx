@@ -21,7 +21,7 @@ const statusMap: Record<string, { label: string; badge: string }> = {
   CREATED:   { label: "대기 중",  badge: "bg-yellow-100 text-yellow-700" },
   PENDING:   { label: "대기 중",  badge: "bg-yellow-100 text-yellow-700" },
   RECORDING: { label: "녹음 중",  badge: "bg-blue-100 text-blue-700" },
-  ANALYZING: { label: "분석 중",  badge: "bg-purple-100 text-purple-700" },
+  ANALYZING: { label: "분석 중",  badge: "bg-brand-soft text-brand" },
   COMPLETED: { label: "완료",     badge: "bg-emerald-100 text-emerald-700" },
 };
 
@@ -144,7 +144,7 @@ export default function MeetingsPage({
           </div>
           <button
             onClick={() => setCreateModalOpen(true)}
-            className={`${showCreateButton ? 'inline-flex' : 'hidden'} items-center justify-center rounded-lg bg-[#5F74FA] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#4E62E6]`}
+            className={`${showCreateButton ? 'inline-flex' : 'hidden'} items-center justify-center rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-hover`}
           >
             새 1on1 만들기
           </button>
@@ -156,9 +156,9 @@ export default function MeetingsPage({
           </div>
         )}
 
-        <div className={`grid gap-6 ${showTeamPanels ? 'xl:grid-cols-[1.6fr_0.9fr]' : ''}`}>
+        <div className={`grid gap-8 ${showTeamPanels ? 'xl:grid-cols-[1.6fr_0.9fr]' : ''}`}>
           <div className="space-y-6">
-            <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <section className="border-t border-line pt-6 first:border-t-0 first:pt-0">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-sm text-gray-500">예정된 미팅</p>
@@ -170,11 +170,11 @@ export default function MeetingsPage({
               </div>
 
               {isLoading ? (
-                <div className="mt-6 rounded-3xl border border-gray-200 bg-gray-50 p-8 text-center text-gray-400 animate-pulse">
+                <div className="mt-6 rounded-lg bg-gray-50 p-8 text-center text-gray-400 animate-pulse">
                   불러오는 중...
                 </div>
               ) : futureMeetings.length === 0 ? (
-                <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
+                <div className="mt-6 rounded-lg border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
                   예정된 미팅이 없습니다.
                 </div>
               ) : (
@@ -184,7 +184,7 @@ export default function MeetingsPage({
                       <button
                         type="button"
                         onClick={() => navigate(getMeetingPath(String(meeting.meetingId)))}
-                        className="w-full rounded-3xl border border-blue-100 bg-blue-50 p-6 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-100"
+                        className="w-full rounded-lg bg-brand-soft p-6 text-left transition hover:brightness-95"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-4">
                           <div>
@@ -215,7 +215,7 @@ export default function MeetingsPage({
                     <button
                       type="button"
                       onClick={() => setShowAllFuture((prev) => !prev)}
-                      className="w-full rounded-3xl border border-gray-200 bg-gray-50 py-3 text-sm font-medium text-gray-500 transition hover:bg-gray-100"
+                      className="w-full py-2 text-sm font-medium text-gray-500 transition hover:text-gray-700"
                     >
                       {showAllFuture ? '접기 ▲' : `${futureMeetings.length - 3}개 더 보기 ▼`}
                     </button>
@@ -224,7 +224,7 @@ export default function MeetingsPage({
               )}
             </section>
 
-            <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <section className="border-t border-line pt-6 first:border-t-0 first:pt-0">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">내 미팅 기록</h3>
@@ -268,22 +268,22 @@ export default function MeetingsPage({
               {isLoading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-3xl border border-gray-200 bg-gray-100 p-4 h-16 animate-pulse" />
+                    <div key={i} className="rounded-lg bg-gray-100 h-16 animate-pulse" />
                   ))}
                 </div>
               ) : filteredHistory.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
+                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
                   {historyMeetings.length === 0 ? '아직 기록된 미팅이 없습니다.' : '필터 조건에 맞는 미팅이 없습니다.'}
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3">
+                  <div className="divide-y divide-line">
                     {paginatedHistory.map((meeting) => (
                       <div key={meeting.meetingId} className="relative">
                         <button
                           type="button"
                           onClick={() => navigate(getMeetingPath(String(meeting.meetingId)))}
-                          className="w-full rounded-3xl border border-gray-200 bg-gray-50 p-4 text-left transition hover:border-gray-300 hover:bg-gray-100"
+                          className="w-full px-2 py-4 text-left transition hover:bg-gray-50"
                         >
                           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div className="flex flex-wrap items-baseline gap-2">
@@ -347,8 +347,8 @@ export default function MeetingsPage({
           </div>
 
           {showTeamPanels && (
-          <aside className="space-y-6">
-            <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+          <aside className="space-y-6 border-t border-line pt-6 xl:border-l xl:border-t-0 xl:pl-8 xl:pt-0">
+            <section className="border-t border-line pt-6 first:border-t-0 first:pt-0">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">1on1 멤버</h3>
@@ -357,17 +357,17 @@ export default function MeetingsPage({
               </div>
 
               {memberList.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
                   아직 추가된 멤버가 없습니다.
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="divide-y divide-line">
                   {memberList.map((member) => (
                     <button
                       key={member.id}
                       type="button"
                       onClick={() => navigate(ROUTES.LEADER_MEMBER(member.id))}
-                      className="flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 p-4 text-left transition hover:border-gray-300 hover:bg-gray-100"
+                      className="flex w-full items-center justify-between px-2 py-3 text-left transition hover:bg-gray-50"
                     >
                       <div>
                         <p className="text-sm font-semibold text-gray-900">{member.name}</p>
@@ -382,7 +382,7 @@ export default function MeetingsPage({
               )}
             </section>
 
-            <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <section className="border-t border-line pt-6 first:border-t-0 first:pt-0">
               <div className="mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">액션 아이템</h3>
                 <p className="text-sm text-gray-500">멤버별로 이번 1on1에서 정한 다음 액션이에요.</p>
@@ -391,27 +391,27 @@ export default function MeetingsPage({
               {actionItemsLoading ? (
                 <div className="space-y-3">
                   {[1, 2].map((i) => (
-                    <div key={i} className="rounded-3xl border border-gray-200 bg-gray-100 p-4 h-16 animate-pulse" />
+                    <div key={i} className="rounded-lg bg-gray-100 h-16 animate-pulse" />
                   ))}
                 </div>
               ) : actionItemsError ? (
-                <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
                   {actionItemsError}
                 </div>
               ) : actionItems.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
                   아직 정해진 액션이 없습니다.
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="divide-y divide-line">
                   {actionItems.map((member) => {
                     const isOpen = expandedActionMembers.has(member.memberId);
                     return (
-                      <div key={member.memberId} className="rounded-3xl border border-gray-200 bg-gray-50 overflow-hidden">
+                      <div key={member.memberId}>
                         <button
                           type="button"
                           onClick={() => toggleActionMember(member.memberId)}
-                          className="flex w-full items-center justify-between gap-2 p-4 text-left transition hover:bg-gray-100"
+                          className="flex w-full items-center justify-between gap-2 px-2 py-3 text-left transition hover:bg-gray-50"
                         >
                           <p className="text-sm font-semibold text-gray-900">
                             {member.memberName}
@@ -421,7 +421,7 @@ export default function MeetingsPage({
                           <span className="flex-shrink-0 text-xs text-gray-400">{isOpen ? '▲' : '▼'}</span>
                         </button>
                         {isOpen && (
-                          <ul className="space-y-1.5 px-4 pb-4">
+                          <ul className="space-y-1.5 px-2 pb-3">
                             {member.plans.map((plan) => (
                               <li key={plan.planId} className="flex gap-2 text-sm text-gray-600">
                                 <span className="text-gray-300">•</span>

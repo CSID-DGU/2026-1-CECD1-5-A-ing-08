@@ -320,8 +320,8 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           onClick={() => setCreateModalOpen(true)}
           className={
             isCollapsed
-              ? 'w-8 h-8 bg-black text-white rounded-lg text-base font-medium hover:bg-gray-800 transition-colors flex items-center justify-center'
-              : 'w-full py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2'
+              ? 'w-8 h-8 bg-brand text-white rounded-lg text-base font-medium hover:bg-brand-hover transition-colors flex items-center justify-center'
+              : 'w-full py-2.5 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-hover transition-colors flex items-center justify-center gap-2'
           }
         >
           {isCollapsed ? '+' : '새 1on1 만들기'}
