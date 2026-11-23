@@ -5,6 +5,7 @@ import { useMe } from '@/features/auth/useMe';
 import { useLogout } from '@/features/auth/useLogout';
 import { useTeamMembers } from '@/features/team/useTeamMembers';
 import { useRenameTeam } from '@/features/team/useRenameTeam';
+import { useRegenerateInviteCode } from '@/features/team/useRegenerateInviteCode';
 
 interface NavItem {
   label: string;
@@ -90,6 +91,13 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const { members, isLoading: membersLoading, fetch: fetchMembers } = useTeamMembers(user?.teamId ?? '');
   const { rename, isSaving: renaming, error: renameError, resetError: resetRenameError } = useRenameTeam();
   const [teamNameDraft, setTeamNameDraft] = useState('');
+  const {
+    regenerate,
+    isRegenerating,
+    error: regenerateError,
+    resetError: resetRegenerateError,
+  } = useRegenerateInviteCode();
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
 
   useEffect(() => {
     if (!profileMenuOpen) return;
@@ -130,6 +138,10 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     }
     setActiveSection(section);
     if (section === 'members') fetchMembers();
+    if (section === 'inviteCode') {
+      setConfirmRegenerate(false);
+      resetRegenerateError();
+    }
     if (section === 'rename') {
       setTeamNameDraft(user?.teamName ?? '');
       resetRenameError();
@@ -144,6 +156,11 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     e.preventDefault();
     if (!user?.teamId || !canSaveTeamName) return;
     if (await rename(user.teamId, trimmedTeamName)) setActiveSection(null);
+  };
+
+  const handleRegenerateInviteCode = async () => {
+    if (!user?.teamId) return;
+    if (await regenerate(user.teamId)) setConfirmRegenerate(false);
   };
 
   const handleCopyInviteCode = () => {
@@ -322,6 +339,41 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                     </button>
                     {codeCopied && (
                       <p className="mt-1.5 text-center text-xs text-green-600">클립보드에 복사됐습니다.</p>
+                    )}
+                    {confirmRegenerate ? (
+                      <div className="mt-2.5 rounded border border-amber-200 bg-amber-50 px-2.5 py-2">
+                        <p className="text-[11px] leading-relaxed text-amber-800">
+                          지금 코드는 더 이상 쓸 수 없게 돼요. 이미 들어온 멤버는 그대로예요.
+                        </p>
+                        <div className="mt-1.5 flex justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setConfirmRegenerate(false)}
+                            className="rounded px-2 py-0.5 text-xs text-gray-500 hover:bg-white"
+                          >
+                            취소
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRegenerateInviteCode}
+                            disabled={isRegenerating}
+                            className="rounded bg-brand px-2 py-0.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-50"
+                          >
+                            {isRegenerating ? '만드는 중...' : '새로 만들기'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { setConfirmRegenerate(true); resetRegenerateError(); }}
+                        className="mt-2 w-full text-center text-xs text-gray-500 underline-offset-2 hover:text-gray-800 hover:underline"
+                      >
+                        새 코드 만들기
+                      </button>
+                    )}
+                    {regenerateError && (
+                      <p className="mt-1.5 text-center text-xs text-red-500">{regenerateError}</p>
                     )}
                   </div>
                 )}

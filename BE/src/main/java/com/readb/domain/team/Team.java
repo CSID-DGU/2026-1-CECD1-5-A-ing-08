@@ -34,4 +34,8 @@ public class Team {
     public void rename(String name) {
         this.name = name;
     }
+
+    public void changeInviteCode(String inviteCode) {
+        this.inviteCode = inviteCode;
+    }
 }

@@ -66,3 +66,10 @@ export async function renameTeam(teamId: string, name: string): Promise<JoinTeam
   const d = res.data.data;
   return { teamId: String(d.teamId), teamName: d.teamName };
 }
+
+export async function regenerateInviteCode(teamId: string): Promise<string> {
+  const res = await apiClient.post<ApiResponse<{ teamId: number; inviteCode: string }>>(
+    `/api/v1/teams/${teamId}/invite-code`,
+  );
+  return res.data.data.inviteCode;
+}
