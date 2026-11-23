@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Card from '@/components/ui/Card';
 import type { TeamHealthScoreData, TeamHealthTrend } from '@/types/teamHealth';
 
@@ -39,6 +39,9 @@ export default function TeamHealthScoreCard({ data, coachingSlot }: TeamHealthSc
       : delta < 0
         ? `▼${Math.abs(delta)}`
         : '≈';
+  // BE trendDelta = 이번 달 평균 - 직전 3개월 평균. 이번 달 평균은 monthlyTrend 마지막 값이므로 역산
+  const thisMonthScore = data.monthlyTrend?.[data.monthlyTrend.length - 1]?.score;
+  const threeMonthAvg = hasDelta && thisMonthScore !== undefined ? thisMonthScore - delta : null;
   const monthly = (data.monthlyTrend ?? []).map((m) => ({
     label: `${Number(m.month.slice(5))}월`,
     score: m.score,
@@ -81,22 +84,41 @@ export default function TeamHealthScoreCard({ data, coachingSlot }: TeamHealthSc
 
           {/* 한 달치뿐이면 추이가 없으므로 숨김 */}
           {monthly.length >= 2 && (
-            <div className="h-28 w-full sm:w-64 sm:shrink-0" aria-label="월별 팀 헬스 스코어 추이">
+            <div className="h-36 w-full sm:w-2/5 sm:shrink-0" aria-label="월별 팀 헬스 스코어 추이">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthly} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
                   <XAxis
                     dataKey="label"
+                    interval={0}
+                    padding={{ left: 16, right: 16 }}
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: '#9ca3af', fontSize: 11 }}
                   />
-                  <YAxis hide domain={['dataMin - 10', 'dataMax + 10']} />
+                  <YAxis
+                    domain={['dataMin - 2', 'dataMax + 2']}
+                    ticks={[Math.min(...monthly.map((m) => m.score)), Math.max(...monthly.map((m) => m.score))]}
+                    tickFormatter={(v: number) => String(Math.round(v))}
+                    axisLine={false}
+                    tickLine={false}
+                    width={28}
+                    tick={{ fill: '#9ca3af', fontSize: 11 }}
+                  />
+                  {threeMonthAvg !== null && (
+                    <ReferenceLine
+                      y={threeMonthAvg}
+                      stroke="#9ca3af"
+                      strokeDasharray="4 4"
+                      ifOverflow="extendDomain"
+                      label={{ value: '3개월 평균', position: 'insideTopRight', fill: '#9ca3af', fontSize: 11 }}
+                    />
+                  )}
                   <Tooltip
                     formatter={(v: number) => [Math.round(v), '평균']}
                     contentStyle={{ fontSize: 12, borderRadius: 8 }}
                   />
                   <Line
-                    type="monotone"
+                    type="linear"
                     dataKey="score"
                     stroke={TEAM_HEALTH_BAR_COLOR}
                     strokeWidth={2}
