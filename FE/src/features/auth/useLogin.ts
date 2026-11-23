@@ -2,6 +2,7 @@ import { useState } from 'react';
 import apiClient from '@/api/client';
 import { fetchMe } from '@/api/user';
 import { useAuthStore } from '@/stores/authStore';
+import { authStorage } from '@/api/authStorage';
 
 interface LoginRequest {
   email: string;
@@ -11,6 +12,7 @@ interface LoginRequest {
 interface LoginApiResponse {
   data?: {
     accessToken?: string;
+    refreshToken?: string;
     token?: string;
     user?: {
       role: 'LEADER' | 'MEMBER';
@@ -38,7 +40,7 @@ export function useLogin() {
           teamId: '1',
         };
 
-        localStorage.setItem('token', 'mock-token');
+        authStorage.setAccessToken('mock-token');
         setAuth(authUser, 'mock-token');
         console.log('authStore state', useAuthStore.getState());
 
@@ -57,7 +59,8 @@ export function useLogin() {
         throw new Error('Invalid login response');
       }
 
-      localStorage.setItem('token', token);
+      authStorage.setAccessToken(token);
+      authStorage.setRefreshToken(loginData?.refreshToken ?? null);
       const authUser = await fetchMe();
       setAuth(authUser, token);
 

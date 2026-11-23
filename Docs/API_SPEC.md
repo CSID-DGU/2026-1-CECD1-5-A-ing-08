@@ -141,7 +141,7 @@ POST /api/v1/auth/login
 | 토큰 | 만료 |
 |------|------|
 | accessToken | 1시간 |
-| refreshToken | 14일 |
+| refreshToken | 12시간 (로그인 시점 기준, 갱신 시 연장되지 않음) |
 
 **에러**
 | 코드 | HTTP | 상황 |
@@ -170,8 +170,7 @@ POST /api/v1/auth/refresh
   "code": "SUCCESS",
   "message": "토큰이 갱신되었습니다.",
   "data": {
-    "accessToken": "eyJhbGci...(새 토큰)",
-    "refreshToken": "eyJhbGci...(새 토큰)"
+    "accessToken": "eyJhbGci...(새 토큰)"
   }
 }
 ```
@@ -181,6 +180,11 @@ POST /api/v1/auth/refresh
 |------|------|------|
 | EXPIRED_TOKEN | 401 | refreshToken 만료 |
 | INVALID_TOKEN | 401 | 유효하지 않은 토큰 |
+
+> refreshToken은 새로 발급하지 않는다. 로그인 후 12시간이 지나면 다시 로그인해야 한다.
+> 인증이 필요한 API에 토큰이 없거나 만료된 토큰을 보내면 `401` + `{"code": "UNAUTHORIZED"}`를 돌려준다(이전에는 본문 없는 403).
+> FE(`api/client.ts`)는 401을 받으면 이 API로 accessToken을 한 번 갱신해 원래 요청을 다시 보내고, 갱신에 실패하면 로그인 화면으로 보낸다.
+> 토큰과 사용자 정보는 `sessionStorage`에 저장해 브라우저 탭·창을 닫으면 로그아웃된다.
 
 ---
 
@@ -250,7 +254,7 @@ Authorization: Bearer <token>
 ```
 
 > 회원가입 시 입력한 이름/직함을 멤버가 직접 수정할 수 있는 엔드포인트.  
-> 변경 후 FE는 `authStore`와 `localStorage` 토큰을 즉시 갱신하여 화면에 반영.
+> 변경 후 FE는 `authStore`의 사용자 정보를 즉시 갱신하여 화면에 반영.
 
 **에러**
 | 코드 | HTTP | 상황 |
@@ -1964,6 +1968,8 @@ Authorization: Bearer <token> (LEADER)
 
 ## FE 개발 참고: Axios 인터셉터 예시
 
+> 초기 설계 예시다. 실제 구현은 `FE/src/api/client.ts`·`FE/src/api/authStorage.ts`를 기준으로 한다 (refreshToken 재발급 없음, sessionStorage 사용, 동시 401은 갱신 1회로 처리).
+
 ```typescript
 // api/client.ts
 import axios from 'axios';
@@ -2312,3 +2318,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-11-20 | v3.9 | 7.1-T `analyze-test`: COMPLETED 미팅도 재분석 허용 (TRANSCRIBING/ANALYZING일 때만 409). 재분석 시 기존 분석 결과 삭제 후 저장하며 `meeting_id` unique 충돌 수정. |
 | 2026-11-20 | v4.0 | **5.5절 신규**: `PATCH /meetings/{id}` 미팅 정보(제목·일정) 수정 (리더 전용, 분석 상태 무관, 멤버 변경 미지원). |
 | 2026-11-23 | v4.1 | 4.1 `GET /teams/{teamId}/dashboard` 응답에 `monthlyTrend` 추가 — 월별 헬스 스코어 평균 추이 (리더 대시보드 꺾은선 그래프용). |
+| 2026-11-23 | v4.2 | 1.2 refreshToken 만료 14일 → 12시간. 1.3 갱신 응답을 실코드 기준 `accessToken`만으로 정정. 인증 실패 시 403(본문 없음) → 401 `UNAUTHORIZED`. FE 토큰 저장소 localStorage → sessionStorage. |

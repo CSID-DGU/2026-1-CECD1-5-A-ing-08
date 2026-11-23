@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { TalkRatioEvent } from '@/types/talkRatio';
+import { authStorage } from '@/api/authStorage';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
@@ -11,7 +12,7 @@ export function useTalkRatioStream(meetingId: number | null) {
     setRatio(null); // meetingId 변경 시 이전 데이터 초기화
     setConnected(false);
     if (!meetingId) return;
-    const token = localStorage.getItem('token');
+    const token = authStorage.getAccessToken();
     const url = `${API_BASE}/api/v1/meetings/${meetingId}/talk-ratio/stream`;
     const es = new EventSource(token ? `${url}?token=${token}` : url);
     es.onopen = () => setConnected(true);

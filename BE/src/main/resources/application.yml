@@ -37,7 +37,7 @@ swagger:
 jwt:
   secret: ${JWT_SECRET}
   access-expiration-ms: 3600000      # 1시간
-  refresh-expiration-ms: 1209600000  # 14일
+  refresh-expiration-ms: 43200000    # 12시간 (창을 열어 둔 채 다음 날까지 로그인이 유지되지 않도록)
 
 groq:
   api-key: ${GROQ_API_KEY:}   # Groq Whisper STT 전용 — 없으면 녹음 업로드만 실패
