@@ -4,6 +4,7 @@ import { useMeetingStore } from '@/stores/meetingStore';
 import { useMe } from '@/features/auth/useMe';
 import { useLogout } from '@/features/auth/useLogout';
 import { useTeamMembers } from '@/features/team/useTeamMembers';
+import { useRenameTeam } from '@/features/team/useRenameTeam';
 
 interface NavItem {
   label: string;
@@ -82,11 +83,13 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const { logout } = useLogout();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [teamMenuOpen, setTeamMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<'members' | 'inviteCode' | null>(null);
+  const [activeSection, setActiveSection] = useState<'members' | 'inviteCode' | 'rename' | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const teamMenuRef = useRef<HTMLDivElement>(null);
   const { members, isLoading: membersLoading, fetch: fetchMembers } = useTeamMembers(user?.teamId ?? '');
+  const { rename, isSaving: renaming, error: renameError, resetError: resetRenameError } = useRenameTeam();
+  const [teamNameDraft, setTeamNameDraft] = useState('');
 
   useEffect(() => {
     if (!profileMenuOpen) return;
@@ -120,13 +123,27 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     }
   }, [isCollapsed]);
 
-  const handleSectionToggle = (section: 'members' | 'inviteCode') => {
+  const handleSectionToggle = (section: 'members' | 'inviteCode' | 'rename') => {
     if (activeSection === section) {
       setActiveSection(null);
       return;
     }
     setActiveSection(section);
     if (section === 'members') fetchMembers();
+    if (section === 'rename') {
+      setTeamNameDraft(user?.teamName ?? '');
+      resetRenameError();
+    }
+  };
+
+  const trimmedTeamName = teamNameDraft.trim();
+  const canSaveTeamName =
+    trimmedTeamName.length >= 2 && trimmedTeamName.length <= 30 && trimmedTeamName !== user?.teamName;
+
+  const handleRenameTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.teamId || !canSaveTeamName) return;
+    if (await rename(user.teamId, trimmedTeamName)) setActiveSection(null);
   };
 
   const handleCopyInviteCode = () => {
@@ -307,6 +324,52 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                       <p className="mt-1.5 text-center text-xs text-green-600">클립보드에 복사됐습니다.</p>
                     )}
                   </div>
+                )}
+
+                {/* 팀 이름 변경 (리더만) */}
+                <button
+                  onClick={() => handleSectionToggle('rename')}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                >
+                  <span>팀 이름 변경</span>
+                  <svg
+                    width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2"
+                    className={`transition-transform duration-150 ${activeSection === 'rename' ? 'rotate-90' : ''}`}
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+
+                {activeSection === 'rename' && (
+                  <form onSubmit={handleRenameTeam} className="px-4 py-3 border-t border-gray-100">
+                    <input
+                      value={teamNameDraft}
+                      onChange={(e) => { setTeamNameDraft(e.target.value); resetRenameError(); }}
+                      maxLength={30}
+                      autoFocus
+                      aria-label="새 팀 이름"
+                      placeholder="팀 이름 (2~30자)"
+                      className="w-full rounded border border-gray-200 px-2.5 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                    />
+                    {renameError && <p className="mt-1.5 text-xs text-red-500">{renameError}</p>}
+                    <div className="mt-2 flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setActiveSection(null)}
+                        className="rounded px-2.5 py-1 text-xs text-gray-500 hover:bg-gray-100"
+                      >
+                        취소
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!canSaveTeamName || renaming}
+                        className="rounded bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-50"
+                      >
+                        {renaming ? '저장 중...' : '저장'}
+                      </button>
+                    </div>
+                  </form>
                 )}
               </>
             )}

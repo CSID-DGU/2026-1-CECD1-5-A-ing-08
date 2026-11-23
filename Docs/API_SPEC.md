@@ -367,6 +367,46 @@ Authorization: Bearer <token> (MEMBER)
 
 ---
 
+### 3.2b 팀 이름 변경 (리더 전용)
+```
+PATCH /api/v1/teams/{teamId}
+Authorization: Bearer <token> (LEADER)
+```
+
+**Request Body**
+```json
+{
+  "name": "플랫폼팀"
+}
+```
+
+| 필드 | 타입 | 필수 | 검증 규칙 |
+|------|------|------|-----------|
+| name | string | O | 앞뒤 공백 제외 2~30자 (저장 시 앞뒤 공백 제거) |
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "data": {
+    "teamId": 1,
+    "teamName": "플랫폼팀"
+  }
+}
+```
+
+> 해당 팀의 리더만 변경할 수 있다. FE는 응답의 `teamName`으로 `authStore`의 사용자 정보를 갱신한다.
+
+**에러**
+| 코드 | HTTP | 상황 |
+|------|------|------|
+| INVALID_INPUT | 400 | 이름 길이 위반 |
+| FORBIDDEN | 403 | 멤버이거나 다른 팀의 리더 |
+| TEAM_NOT_FOUND | 404 | 존재하지 않는 팀 |
+
+---
+
 ### 3.3 팀 멤버 목록 조회
 ```
 GET /api/v1/teams/{teamId}/members
@@ -2350,3 +2390,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-11-20 | v4.0 | **5.5절 신규**: `PATCH /meetings/{id}` 미팅 정보(제목·일정) 수정 (리더 전용, 분석 상태 무관, 멤버 변경 미지원). |
 | 2026-11-23 | v4.1 | 4.1 `GET /teams/{teamId}/dashboard` 응답에 `monthlyTrend` 추가 — 월별 헬스 스코어 평균 추이 (리더 대시보드 꺾은선 그래프용). |
 | 2026-11-23 | v4.2 | 2.1·2.2 `bio`(한 줄 소개, 최대 100자) 추가, 2.2 name 2~20자·jobTitle 50자 검증을 실코드에 반영. **2.3절 신규**: `PATCH /users/me/password` 비밀번호 변경 (현재 비밀번호 확인, INVALID_CURRENT_PASSWORD 400). DB: `users.bio` 컬럼 추가 (`BE/db/migrations/2026-11-23_add_bio_to_users.sql`). |
+| 2026-11-23 | v4.3 | **3.2b절 신규**: `PATCH /teams/{teamId}` 팀 이름 변경 (해당 팀 리더 전용, 2~30자). |

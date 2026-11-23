@@ -13,6 +13,8 @@ import com.readb.dto.team.TeamJoinRequest;
 import com.readb.dto.team.TeamJoinResponse;
 import com.readb.dto.team.TeamMemberResponse;
 import com.readb.dto.team.TeamPromiseSummaryResponse;
+import com.readb.dto.team.TeamUpdateRequest;
+import com.readb.dto.team.TeamUpdateResponse;
 import com.readb.service.analysis.AnalysisService;
 import com.readb.service.team.TeamService;
 import jakarta.validation.Valid;
@@ -47,6 +49,15 @@ public class TeamController {
             @AuthenticationPrincipal Long memberId,
             @Valid @RequestBody TeamJoinRequest request) {
         return ApiResponse.ok(teamService.joinTeam(memberId, request));
+    }
+
+    @PatchMapping("/{teamId}")
+    @PreAuthorize("hasRole('LEADER')")
+    public ApiResponse<TeamUpdateResponse> renameTeam(
+            @AuthenticationPrincipal Long leaderId,
+            @PathVariable Long teamId,
+            @Valid @RequestBody TeamUpdateRequest request) {
+        return ApiResponse.ok(teamService.renameTeam(leaderId, teamId, request));
     }
 
     @GetMapping("/{teamId}/members")

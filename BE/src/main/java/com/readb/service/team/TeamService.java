@@ -9,6 +9,8 @@ import com.readb.dto.team.TeamCreateResponse;
 import com.readb.dto.team.TeamJoinRequest;
 import com.readb.dto.team.TeamJoinResponse;
 import com.readb.dto.team.TeamMemberResponse;
+import com.readb.dto.team.TeamUpdateRequest;
+import com.readb.dto.team.TeamUpdateResponse;
 import com.readb.repository.TeamRepository;
 import com.readb.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +65,18 @@ public class TeamService {
         member.assignTeam(team.getId());
 
         return new TeamJoinResponse(team.getId(), team.getName());
+    }
+
+    // 팀 이름은 해당 팀의 리더만 바꿀 수 있다.
+    @Transactional
+    public TeamUpdateResponse renameTeam(Long requesterId, Long teamId, TeamUpdateRequest request) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.TEAM_NOT_FOUND));
+        if (!team.getLeaderId().equals(requesterId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        team.rename(request.name().trim());
+        return new TeamUpdateResponse(team.getId(), team.getName());
     }
 
     @Transactional(readOnly = true)

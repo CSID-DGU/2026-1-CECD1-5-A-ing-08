@@ -60,3 +60,9 @@ export async function getTeamMembers(teamId: string): Promise<TeamMember[]> {
     role: m.role === 'LEADER' ? 'leader' : 'member',
   }));
 }
+
+export async function renameTeam(teamId: string, name: string): Promise<JoinTeamResult> {
+  const res = await apiClient.patch<ApiResponse<JoinTeamApiResponse>>(`/api/v1/teams/${teamId}`, { name });
+  const d = res.data.data;
+  return { teamId: String(d.teamId), teamName: d.teamName };
+}
