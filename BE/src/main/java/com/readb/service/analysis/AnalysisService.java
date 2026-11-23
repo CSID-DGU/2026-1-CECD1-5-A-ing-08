@@ -307,16 +307,14 @@ public class AnalysisService {
                   "eventType": "ACHIEVEMENT",
                   "title": "한 줄 성과 제목",
                   "description": "구체적 내용 (수치 포함)",
-                  "evidence": {"quote": "원문 인용", "timestamp": "MM:SS"}
+                  "evidence": {"quote": "원문 인용", "timestamp": "MM:SS", "impactMetric": "배포 시간 30분 → 5분"}
                 }
               ]
             }
 
             [careerEvents 추출 기준]
             멤버 발화에서 다음 유형의 성과/기여를 발견하면 추출하세요 (없으면 빈 배열 []):
-            - ACHIEVEMENT: 완료된 목표, 결과물, 성과 (수치 있으면 반드시 포함)
-              예) "배포 파이프라인 구축 완료해서 배포 시간 30분 → 5분으로 줄였어요"
-            - ACHIEVEMENT: 완료된 목표, 결과물, 제안 채택 포함 (수치 있으면 반드시 포함)
+            - ACHIEVEMENT: 완료된 목표, 결과물, 성과, 제안 채택 포함 (수치 있으면 반드시 포함)
               예) "배포 파이프라인 구축 완료해서 배포 시간 30분 → 5분으로 줄였어요"
               예) "제가 제안한 공통 컴포넌트 방식 팀에서 도입하기로 했어요"
             - GROWTH: 새로운 기술 습득, 역량 확장
@@ -324,6 +322,8 @@ public class AnalysisService {
             - CONTRIBUTION: 팀원 돕기, 협업 기여
               예) "신입 온보딩 자료 만들어서 팀 전체 공유했어요"
             title은 한 줄 요약, description은 구체적 내용, evidence.quote는 원문 인용.
+            evidence.impactMetric은 멤버가 직접 말한 정량 성과(수치·전후 비교)만 짧게 적으세요.
+            발화에 수치가 없으면 impactMetric 키를 넣지 마세요. 추정하거나 지어내지 마세요.
             """;
 
     // 점수는 서버가 status → 점수표(PRD Gap ①)로 계산한다. LLM은 사실(언급 여부·원문·결과 단계)만 추출.
@@ -2449,7 +2449,8 @@ public class AnalysisService {
         Map<Long, Integer> roundByMeetingId = buildRoundMap(meetings);
 
         return careerEventRepository.findByUserIdOrderByOccurredAtDesc(memberId).stream()
-                .filter(e -> e.getEvidence() != null && e.getEvidence().containsKey("impactMetric"))
+                .filter(e -> e.getEvidence() != null
+                        && e.getEvidence().get("impactMetric") instanceof String m && !m.isBlank())
                 .limit(5)
                 .map(e -> toTimelineResponse(e, roundByMeetingId))
                 .toList();
