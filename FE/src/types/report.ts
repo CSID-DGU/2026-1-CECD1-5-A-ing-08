@@ -44,8 +44,9 @@ export interface ExecutionGap {
 
 export interface SpeechActItem {
   count: number;
-  baselineAvg: number;
-  changeRate: number;
+  // 이전 미팅 베이스라인이 없으면 BE가 null로 내려줌
+  baselineAvg: number | null;
+  changeRate: number | null;
   instances: { text: string; timestamp: string }[];
 }
 

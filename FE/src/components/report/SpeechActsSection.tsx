@@ -45,10 +45,12 @@ function SpeechActRow({
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-gray-800">{label}</span>
           <span className="text-lg font-bold text-brand">{item.count}회</span>
-          <ChangeRateBadge rate={item.changeRate} />
+          {item.changeRate != null && <ChangeRateBadge rate={item.changeRate} />}
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="text-xs text-gray-400">평균 {item.baselineAvg}회</span>
+          {item.baselineAvg != null && (
+            <span className="text-xs text-gray-400">평균 {item.baselineAvg}회</span>
+          )}
           <span className="text-gray-400 text-sm">{expanded ? '▲' : '▼'}</span>
         </div>
       </button>
