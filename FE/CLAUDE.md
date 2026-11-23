@@ -70,8 +70,12 @@ Meeting status progression: `pending → recording → analyzing → completed`.
 /member/meeting/:id       MeetingFeedbackPage
 /member/survey/:id        SurveyPage
 /meeting                  MeetingDetailPage (no :id)
-/leader/reports, /leader/9box, /leader/overview, /settings, /invite → all stub to LeaderDashboard
+/settings                 SettingsPage (개인 설정: 이름·직책·한 줄 소개, 비밀번호 변경)
+/leader/reports, /leader/9box, /leader/overview, /invite → all stub to LeaderDashboard
+*                         NotFoundPage (unknown paths)
 ```
+
+All routes are children of one pathless root route whose `errorElement` is `RouteErrorPage`: any error thrown while rendering a page shows a "문제가 생겼어요" screen (reload / home) instead of a blank page. Error screens live in `pages/error/` and render without `PageLayout`.
 
 ## API URL Convention
 
