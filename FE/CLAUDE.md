@@ -30,12 +30,12 @@ Structural rule (not ownership): pages and `features/` hooks fetch data; compone
 ### State Management
 
 Two Zustand stores:
-- `stores/authStore.ts` — `user`, `token`, `setAuth`, `clearAuth`. Token is also mirrored to `localStorage` and read directly by `api/client.ts` on every request.
+- `stores/authStore.ts` — `user`, `token`, `setAuth`, `setToken`, `clearAuth`. User and tokens are persisted via `api/authStorage.ts` in `sessionStorage` (closing the tab/window logs out). Never store auth data in `localStorage`.
 - `stores/meetingStore.ts` — client-side meeting list, `createMeeting`, `updateMeetingStatus`, `setRecordingDuration`, modal open state. Meetings are created in-memory (no persistence).
 
 ### API Client
 
-`api/client.ts` is an Axios instance that reads `localStorage.getItem('token')` directly (not from Zustand) for Authorization headers. Base URL from `VITE_API_BASE_URL`.
+`api/client.ts` is an Axios instance that reads the access token from `authStorage` for Authorization headers. On a 401 it refreshes the access token once via `/api/v1/auth/refresh` (concurrent 401s share one refresh) and retries; if refresh fails it clears auth and redirects to `/login`. Base URL from `VITE_API_BASE_URL`.
 
 ### Meeting Recording Flow
 

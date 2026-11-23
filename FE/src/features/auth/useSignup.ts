@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import apiClient from '@/api/client';
+import { authStorage } from '@/api/authStorage';
 import { useAuthStore } from '@/stores/authStore';
 import type { User, UserRole } from '@/types/user';
 
@@ -28,6 +29,7 @@ interface SignupApiResponse {
   message?: string;
   data?: {
     accessToken?: string;
+    refreshToken?: string;
     token?: string;
     user?: SignupApiUser;
   };
@@ -79,7 +81,7 @@ export function useSignup() {
 
       if (user && token) {
         const authUser = toUser(user);
-        localStorage.setItem('token', token);
+        authStorage.setRefreshToken(signupData?.refreshToken ?? null);
         setAuth(authUser, token);
         return authUser;
       }
