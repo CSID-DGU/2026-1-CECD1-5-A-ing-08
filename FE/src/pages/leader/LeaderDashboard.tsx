@@ -1,7 +1,16 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
-import ScatterRadar, { getQuadrant, QUADRANT_LABELS } from '@/components/charts/ScatterRadar';
+import ScatterRadar, {
+  getGap,
+  getGapStatus,
+  getQuadrant,
+  GAP_STATUS_LABELS,
+  GAP_THRESHOLD,
+  QUADRANT_LABELS,
+  type GapStatus,
+  type RadarViewMode,
+} from '@/components/charts/ScatterRadar';
 import BlockerPyramid from '@/components/charts/BlockerPyramid';
 import ActionFeedbackList from '@/components/feedback/ActionFeedbackList';
 import TeamHealthScoreCard from '@/components/feedback/TeamHealthScoreCard';
@@ -33,10 +42,25 @@ const QUADRANT_BAR_COLOR: Record<RadarQuadrant, string> = {
   STABLE: 'bg-teal-400',
   SILENT_RISK: 'bg-amber-400',
   EXPLICIT_RISK: 'bg-red-400',
-  CONSERVATIVE: 'bg-indigo-400',
+  CONSERVATIVE: 'bg-brand/60',
 };
 
-function MemberStatusRow({ item }: { item: RadarDataPoint }) {
+const GAP_BADGE_COLOR: Record<GapStatus, 'red' | 'yellow' | 'gray'> = {
+  EXPLICIT_RISK: 'red',
+  HIDDEN_GAP: 'yellow',
+  NORMAL: 'gray',
+};
+
+const GAP_BAR_COLOR: Record<GapStatus, string> = {
+  EXPLICIT_RISK: 'bg-risk',
+  HIDDEN_GAP: 'bg-caution',
+  NORMAL: 'bg-ink-muted',
+};
+
+const GAP_STATUS_ORDER: Record<GapStatus, number> = { EXPLICIT_RISK: 0, HIDDEN_GAP: 1, NORMAL: 2 };
+
+function MemberStatusRow({ item, view }: { item: RadarDataPoint; view: RadarViewMode }) {
+  if (view === 'gap') return <GapStatusRow item={item} />;
   const quadrant = getQuadrant(item);
 
   return (
@@ -54,6 +78,76 @@ function MemberStatusRow({ item }: { item: RadarDataPoint }) {
         {Math.round(item.safetyScore)}
       </span>
       <Badge label={QUADRANT_LABELS[quadrant]} color={QUADRANT_BADGE_COLOR[quadrant]} />
+    </div>
+  );
+}
+
+// 대각선 보기: 막대 = 대화 신호 점수, 숫자 = 갭(말한 상태 − 드러난 상태)
+function GapStatusRow({ item }: { item: RadarDataPoint }) {
+  const status = getGapStatus(item);
+  const gap = Math.round(getGap(item));
+
+  return (
+    <div className="flex items-center gap-3 py-1.5">
+      <span className="text-sm text-gray-600 w-10 flex-shrink-0">{item.memberName}</span>
+      <div className="flex-1 min-w-0">
+        <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${GAP_BAR_COLOR[status]}`}
+            style={{ width: `${Math.min(100, Math.max(0, item.safetyScore))}%` }}
+          />
+        </div>
+      </div>
+      <span className="w-9 flex-shrink-0 text-right text-xs font-semibold text-gray-700" title="Honesty Gap">
+        {gap > 0 ? `+${gap}` : gap}
+      </span>
+      <Badge label={GAP_STATUS_LABELS[status]} color={GAP_BADGE_COLOR[status]} />
+    </div>
+  );
+}
+
+const RADAR_VIEW_OPTIONS: { value: RadarViewMode; label: string }[] = [
+  { value: 'quadrant', label: '사분면' },
+  { value: 'gap', label: '대각선' },
+];
+
+function RadarViewToggle({ value, onChange }: { value: RadarViewMode; onChange: (v: RadarViewMode) => void }) {
+  return (
+    <div className="flex rounded-lg border border-line p-0.5" role="group" aria-label="레이더 보기 방식">
+      {RADAR_VIEW_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          aria-pressed={value === opt.value}
+          onClick={() => onChange(opt.value)}
+          className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+            value === opt.value ? 'bg-brand-soft text-brand' : 'text-ink-secondary hover:text-ink'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function GapLegend({ items }: { items: RadarDataPoint[] }) {
+  const count = (s: GapStatus) => items.filter((i) => getGapStatus(i) === s).length;
+  return (
+    <div className="mb-2 flex flex-wrap items-center gap-4 text-xs text-ink-secondary">
+      <span className="flex items-center gap-1.5">
+        <span className="inline-block h-2.5 w-2.5 rounded-full bg-risk" />
+        위험 {count('EXPLICIT_RISK')}
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-caution bg-white" />
+        조용한 위험 {count('HIDDEN_GAP')}
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="inline-block h-2 w-2 rounded-full bg-ink-muted" />
+        그 외 {count('NORMAL')}
+      </span>
+      <span className="ml-auto text-ink-muted">설문 점수가 대화 신호보다 {GAP_THRESHOLD}점 이상 높으면 조용한 위험</span>
     </div>
   );
 }
@@ -156,9 +250,14 @@ export default function LeaderDashboard() {
     error: coachingError,
   } = useTeamCoaching(teamId);
   const [activeTab, setActiveTab] = useState<ChartTab>('radar');
+  const [radarView, setRadarView] = useState<RadarViewMode>('quadrant');
   const radarItems = radarData ?? [];
   // 낮은 점수(위험) 우선 정렬
-  const memberStatusItems = [...radarItems].sort((a, b) => a.safetyScore - b.safetyScore);
+  const memberStatusItems = [...radarItems].sort((a, b) =>
+    radarView === 'gap'
+      ? GAP_STATUS_ORDER[getGapStatus(a)] - GAP_STATUS_ORDER[getGapStatus(b)] || getGap(b) - getGap(a)
+      : a.safetyScore - b.safetyScore,
+  );
   const blockerKeywords = blockerPyramid?.blockerKeywords ?? [];
   // 처방 제목은 서버에서 `${keyword} 반복 언급`으로 생성되므로 키워드 매칭으로
   // 해당 블로커를 언급한 멤버 목록을 붙임 (클릭 시 누가 언급했는지 표시)
@@ -244,11 +343,13 @@ export default function LeaderDashboard() {
             {activeTab === 'radar' && (
               <>
                 {/* Member filter dropdown (UI only) */}
-                <div className="mb-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
                   <select className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
                     <option>전체 멤버 보기</option>
                   </select>
+                  <RadarViewToggle value={radarView} onChange={setRadarView} />
                 </div>
+                {radarView === 'gap' && radarItems.length > 0 && <GapLegend items={radarItems} />}
 
                 {/* Scatter Chart */}
                 <div style={{ height: 300 }}>
@@ -265,6 +366,7 @@ export default function LeaderDashboard() {
                   {!radarLoading && !radarError && radarItems.length > 0 && (
                     <ScatterRadar
                       data={radarItems}
+                      view={radarView}
                       onMemberClick={(id) => console.log('clicked', id)}
                     />
                   )}
@@ -338,7 +440,7 @@ export default function LeaderDashboard() {
                 )}
                 {!radarLoading && !radarError && memberStatusItems.length > 0 ? (
                   memberStatusItems.map((item) => (
-                    <MemberStatusRow key={item.memberId} item={item} />
+                    <MemberStatusRow key={item.memberId} item={item} view={radarView} />
                   ))
                 ) : null}
                 {!radarLoading && !radarError && memberStatusItems.length === 0 && (

@@ -1,5 +1,7 @@
+import { useCallback } from 'react';
 import {
   CartesianGrid,
+  Customized,
   ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
@@ -11,9 +13,17 @@ import {
 } from 'recharts';
 import type { RadarDataPoint, RadarQuadrant } from '@/types/analysis';
 
+/**
+ * quadrant: 기존 사분면 보기 (설문·대화 점수 각각 45 기준 4분할)
+ * gap: 대각선 보기 (말한 상태 = 드러난 상태 대각선에서 아래로 벗어난 정도 = Honesty Gap)
+ */
+export type RadarViewMode = 'quadrant' | 'gap';
+
 export interface ScatterRadarProps {
   data: RadarDataPoint[];
   riskThreshold?: number;
+  /** 보기 방식. 기본값은 기존과 같은 'quadrant'. */
+  view?: RadarViewMode;
   onMemberClick?: (memberId: number) => void;
 }
 
@@ -36,7 +46,7 @@ const QUADRANT_STYLE: Record<RadarQuadrant, { fill: string; stroke: string; text
   STABLE: { fill: 'rgba(32,201,151,0.65)', stroke: '#20C997', text: '#065F46', bg: '#D1FAE5' },
   SILENT_RISK: { fill: 'rgba(245,158,11,0.65)', stroke: '#F59E0B', text: '#92400E', bg: '#FEF3C7' },
   EXPLICIT_RISK: { fill: 'rgba(250,82,82,0.65)', stroke: '#FA5252', text: '#9F1239', bg: '#FED7D7' },
-  CONSERVATIVE: { fill: 'rgba(99,102,241,0.55)', stroke: '#6366F1', text: '#3730A3', bg: '#E0E7FF' },
+  CONSERVATIVE: { fill: 'rgba(31,58,95,0.45)', stroke: '#1F3A5F', text: '#1F3A5F', bg: '#E8EDF3' },
 };
 
 // 분기점 45: safety 기준선이 40(발화 없음)이라, 발화가 조금이라도 있으면 상단으로 가도록 BE와 정렬.
@@ -59,18 +69,141 @@ export function getQuadrant(point: RadarDataPoint, threshold: number = QUADRANT_
   return 'CONSERVATIVE';
 }
 
+// ── 대각선(갭) 보기 ───────────────────────────────────────────────────────────
+// BE computeRiskLevel 과 같은 경계: |gap| 25 이상부터 WARNING.
+export const GAP_THRESHOLD = 25;
+
+export type GapStatus = 'EXPLICIT_RISK' | 'HIDDEN_GAP' | 'NORMAL';
+
+export const GAP_STATUS_LABELS: Record<GapStatus, string> = {
+  EXPLICIT_RISK: '위험',
+  HIDDEN_GAP: '조용한 위험',
+  NORMAL: '그 외',
+};
+
+const GAP_COLORS = {
+  risk: '#D64545',
+  caution: '#C98A1B',
+  neutral: '#9A9EAB',
+  ink: '#1A1D29',
+  muted: '#9A9EAB',
+  line: '#E6E8EE',
+  diagonal: '#B9BDC8',
+  zone: '#F7F8FA',
+  surface: '#FFFFFF',
+};
+
+/** 말한 상태(설문) − 드러난 상태(대화). BE honestyGap 과 같은 식이며, 점 위치와 항상 일치하도록 점수에서 계산. */
+export function getGap(point: RadarDataPoint): number {
+  return point.surveyScore - point.safetyScore;
+}
+
+/**
+ * 위험: 설문·대화 모두 낮음 (사분면 보기의 위험과 동일 기준, 갭보다 우선).
+ * 조용한 위험: 설문은 높게 말했지만 대화 신호가 GAP_THRESHOLD 이상 낮음.
+ *
+ * 참고: BE riskLevel 은 |gap| 기준이라 대화 신호가 설문보다 크게 높은 경우(음수 갭, 보수적 응답)도
+ * WARNING 이 될 수 있지만, 이 보기는 "말보다 행동 신호가 낮은" 숨은 위험만 강조하므로 양수 갭만 본다.
+ * 사분면 보기와 기준이 달라 같은 멤버가 두 보기에서 다르게 분류될 수 있다 (예: 90/60 → 안정 / 조용한 위험).
+ */
+export function getGapStatus(
+  point: RadarDataPoint,
+  threshold: number = QUADRANT_THRESHOLD,
+  gapThreshold: number = GAP_THRESHOLD,
+): GapStatus {
+  if (point.surveyScore < threshold && point.safetyScore < threshold) return 'EXPLICIT_RISK';
+  if (getGap(point) >= gapThreshold) return 'HIDDEN_GAP';
+  return 'NORMAL';
+}
+
+interface AxisLike {
+  scale?: (value: number) => number;
+}
+
+interface GapZoneProps {
+  xAxisMap?: Record<string, AxisLike>;
+  yAxisMap?: Record<string, AxisLike>;
+  gapThreshold: number;
+}
+
+/** 대각선에서 gapThreshold 이상 아래로 떨어진 삼각형 구역을 옅게 칠함. */
+function GapZone({ xAxisMap, yAxisMap, gapThreshold }: GapZoneProps) {
+  const xScale = Object.values(xAxisMap ?? {})[0]?.scale;
+  const yScale = Object.values(yAxisMap ?? {})[0]?.scale;
+  if (!xScale || !yScale) return null;
+  const points = [
+    [gapThreshold, 0],
+    [100, 0],
+    [100, 100 - gapThreshold],
+  ]
+    .map(([x, y]) => `${xScale(x)},${yScale(y)}`)
+    .join(' ');
+  return (
+    <g>
+      <polygon points={points} fill={GAP_COLORS.zone} />
+      {/* 대각선 라벨: 선 위쪽에 두어 겹치지 않게 함 */}
+      <text x={xScale(86)} y={yScale(95)} textAnchor="end" fontSize={11} fill={GAP_COLORS.muted}>
+        말 = 행동
+      </text>
+    </g>
+  );
+}
+
+interface GapDotProps {
+  cx?: number;
+  cy?: number;
+  payload?: RadarDataPoint;
+  threshold: number;
+  gapThreshold: number;
+  onMemberClick?: (memberId: number) => void;
+}
+
+/** 위험 = 채운 빨간 점, 조용한 위험 = 빈 주황 고리, 그 외 = 작은 회색 점(이름은 툴팁으로). */
+function GapDot({ cx = 0, cy = 0, payload, threshold, gapThreshold, onMemberClick }: GapDotProps) {
+  if (!payload) return null;
+  const status = getGapStatus(payload, threshold, gapThreshold);
+
+  return (
+    <g
+      style={{ cursor: onMemberClick ? 'pointer' : 'default' }}
+      onClick={() => onMemberClick?.(payload.memberId)}
+    >
+      {status === 'EXPLICIT_RISK' && <circle cx={cx} cy={cy} r={8} fill={GAP_COLORS.risk} />}
+      {status === 'HIDDEN_GAP' && (
+        <circle cx={cx} cy={cy} r={7} fill={GAP_COLORS.surface} stroke={GAP_COLORS.caution} strokeWidth={2.5} />
+      )}
+      {status === 'NORMAL' && <circle cx={cx} cy={cy} r={5} fill={GAP_COLORS.neutral} />}
+      {status !== 'NORMAL' && (
+        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={12} fontWeight={500} fill={GAP_COLORS.ink}>
+          {payload.memberName}
+        </text>
+      )}
+    </g>
+  );
+}
+
 interface CustomTooltipProps {
   active?: boolean;
   payload?: { payload: RadarDataPoint }[];
   threshold?: number;
+  view?: RadarViewMode;
+  gapThreshold?: number;
 }
 
-function CustomTooltip({ active, payload, threshold }: CustomTooltipProps) {
+const GAP_BADGE_STYLE: Record<GapStatus, { text: string; bg: string }> = {
+  EXPLICIT_RISK: { text: '#A33232', bg: '#FBECEC' },
+  HIDDEN_GAP: { text: '#8A5D0F', bg: '#FBF3E4' },
+  NORMAL: { text: '#6B7080', bg: '#F1F2F5' },
+};
+
+function CustomTooltip({ active, payload, threshold, view = 'quadrant', gapThreshold = GAP_THRESHOLD }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   const point = payload[0]?.payload;
   if (!point) return null;
   const quadrant = getQuadrant(point, threshold);
-  const qStyle = QUADRANT_STYLE[quadrant];
+  const gapStatus = getGapStatus(point, threshold, gapThreshold);
+  const qStyle = view === 'gap' ? GAP_BADGE_STYLE[gapStatus] : QUADRANT_STYLE[quadrant];
+  const badgeLabel = view === 'gap' ? GAP_STATUS_LABELS[gapStatus] : QUADRANT_LABELS[quadrant];
   const barWidth = 160;
   const surveyWidth = (point.surveyScore / 100) * barWidth;
   const safetyWidth = (point.safetyScore / 100) * barWidth;
@@ -115,7 +248,7 @@ function CustomTooltip({ active, payload, threshold }: CustomTooltipProps) {
             <strong style={{ color: '#111827' }}>{point.safetyScore}%</strong>
           </div>
           <div style={{ height: 6, width: barWidth, background: '#E5E7EB', borderRadius: 4 }}>
-            <div style={{ width: safetyWidth, height: '100%', background: 'rgba(99,102,241,0.55)', borderRadius: 4 }} />
+            <div style={{ width: safetyWidth, height: '100%', background: 'rgba(31,58,95,0.55)', borderRadius: 4 }} />
           </div>
         </div>
       </div>
@@ -123,7 +256,9 @@ function CustomTooltip({ active, payload, threshold }: CustomTooltipProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, color: '#6B7280' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>Honesty Gap</span>
-          <strong style={{ color: '#111827' }}>{point.honestyGap}</strong>
+          <strong style={{ color: '#111827' }}>
+            {view === 'gap' ? `${getGap(point) > 0 ? '+' : ''}${Math.round(getGap(point))}` : point.honestyGap}
+          </strong>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>현재 상태</span>
@@ -142,7 +277,7 @@ function CustomTooltip({ active, payload, threshold }: CustomTooltipProps) {
             fontSize: 11,
           }}
         >
-          {QUADRANT_LABELS[quadrant]}
+          {badgeLabel}
         </span>
       </div>
     </div>
@@ -184,9 +319,16 @@ function CustomDot({ cx = 0, cy = 0, payload, threshold, onMemberClick }: Custom
 export default function ScatterRadar({
   data,
   riskThreshold = QUADRANT_THRESHOLD / 100,
+  view = 'quadrant',
   onMemberClick,
 }: ScatterRadarProps) {
   const threshold = riskThreshold * 100;
+
+  if (view === 'gap') {
+    return (
+      <GapRadar data={data} threshold={threshold} gapThreshold={GAP_THRESHOLD} onMemberClick={onMemberClick} />
+    );
+  }
 
   return (
     <div className="w-full h-full">
@@ -194,7 +336,7 @@ export default function ScatterRadar({
         <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 20 }}>
           <CartesianGrid strokeDasharray="4 4" stroke="#E5E7EB" strokeOpacity={0.7} />
 
-          {/* 우상단 안정(green), 우하단 주의(amber), 좌하단 위험(red), 좌상단 보수적(indigo) */}
+          {/* 우상단 안정(green), 우하단 주의(amber), 좌하단 위험(red), 좌상단 보수적(navy) */}
           <ReferenceArea x1={threshold} x2={100} y1={threshold} y2={100} fill="#20C997" fillOpacity={0.2} />
           <ReferenceArea x1={threshold} x2={100} y1={0} y2={threshold} fill="#F59E0B" fillOpacity={0.18} />
           <ReferenceArea x1={0} x2={threshold} y1={0} y2={threshold} fill="#FA5252" fillOpacity={0.2} />
@@ -242,6 +384,97 @@ export default function ScatterRadar({
               <CustomDot
                 {...(props as CustomDotProps)}
                 threshold={threshold}
+                onMemberClick={onMemberClick}
+              />
+            )}
+          />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+interface GapRadarProps {
+  data: RadarDataPoint[];
+  threshold: number;
+  gapThreshold: number;
+  onMemberClick?: (memberId: number) => void;
+}
+
+function GapRadar({ data, threshold, gapThreshold, onMemberClick }: GapRadarProps) {
+  const axisTick = { fontSize: 11, fill: GAP_COLORS.muted };
+  // 매 렌더마다 새 컴포넌트 타입이 생기지 않도록 고정
+  const renderGapZone = useCallback(
+    (props: object) => <GapZone {...(props as GapZoneProps)} gapThreshold={gapThreshold} />,
+    [gapThreshold],
+  );
+
+  return (
+    <div className="w-full h-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 20 }}>
+          <Customized component={renderGapZone} />
+
+          <XAxis
+            type="number"
+            dataKey="surveyScore"
+            domain={[0, 100]}
+            ticks={[0, 50, 100]}
+            tick={axisTick}
+            axisLine={{ stroke: GAP_COLORS.line }}
+            tickLine={false}
+            label={{
+              value: '설문에서 말한 상태 →',
+              position: 'insideBottom',
+              offset: -15,
+              style: { fontSize: 11, fill: GAP_COLORS.muted },
+            }}
+          />
+          <YAxis
+            type="number"
+            dataKey="safetyScore"
+            domain={[0, 100]}
+            ticks={[0, 50, 100]}
+            tick={axisTick}
+            axisLine={{ stroke: GAP_COLORS.line }}
+            tickLine={false}
+            label={{
+              value: '대화에서 드러난 상태 →',
+              angle: -90,
+              position: 'insideLeft',
+              offset: 10,
+              style: { fontSize: 11, fill: GAP_COLORS.muted, textAnchor: 'middle' },
+            }}
+          />
+
+          {/* 말 = 행동 기준 대각선 */}
+          <ReferenceLine
+            segment={[{ x: 0, y: 0 }, { x: 100, y: 100 }]}
+            stroke={GAP_COLORS.diagonal}
+            strokeWidth={1}
+          />
+          {/* 조용한 위험 경계: 대각선에서 gapThreshold 만큼 아래 */}
+          <ReferenceLine
+            segment={[{ x: gapThreshold, y: 0 }, { x: 100, y: 100 - gapThreshold }]}
+            stroke={GAP_COLORS.caution}
+            strokeOpacity={0.5}
+            strokeDasharray="3 4"
+            strokeWidth={1}
+          />
+
+          <Tooltip
+            cursor={false}
+            content={<CustomTooltip threshold={threshold} view="gap" gapThreshold={gapThreshold} />}
+          />
+
+          <Scatter
+            data={data}
+            isAnimationActive={false}
+            shape={(props: object) => (
+              <GapDot
+                {...(props as GapDotProps)}
+                threshold={threshold}
+                gapThreshold={gapThreshold}
                 onMemberClick={onMemberClick}
               />
             )}
