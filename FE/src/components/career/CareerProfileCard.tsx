@@ -26,7 +26,7 @@ export default function CareerProfileCard({ stats, onEdit }: CareerProfileCardPr
     stats.aiSummary?.trim() || `${stats.teamName}팀의 ${displayJobTitle} 입니다.`;
 
   return (
-    <Card className="rounded-lg border-gray-100 p-5 shadow-sm sm:p-6">
+    <Card>
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-base font-semibold text-white">

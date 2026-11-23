@@ -10,7 +10,7 @@ export default function CareerTimelineSection({ events }: CareerTimelineSectionP
   const sortedEvents = [...events].sort((a, b) => b.eventDate.localeCompare(a.eventDate));
 
   return (
-    <section className="rounded-lg border border-gray-100 bg-white p-5 sm:p-6">
+    <section className="border-t border-line pt-7">
       <div className="mb-5">
         <h2 className="text-base font-semibold text-gray-950">내 커리어 메모리</h2>
         <p className="mt-1.5 text-xs font-medium text-slate-400">
@@ -29,7 +29,7 @@ export default function CareerTimelineSection({ events }: CareerTimelineSectionP
                   <span
                     className={`absolute left-[4px] top-4 h-2.5 w-2.5 rounded-full ring-4 ring-white sm:left-[12px] ${meta.dotClassName}`}
                   />
-                  <Card className="rounded-lg border-gray-200 p-3 shadow-none">
+                  <Card className="py-1.5">
                     <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
                       <time className="text-xs font-semibold text-slate-300">
                         {formatCareerDate(event.eventDate)}
@@ -46,7 +46,7 @@ export default function CareerTimelineSection({ events }: CareerTimelineSectionP
           </ol>
         </div>
       ) : (
-        <Card className="rounded-lg p-6">
+        <Card className="py-4">
           <p className="text-sm font-medium text-slate-500">표시할 커리어 메모리가 아직 없습니다.</p>
         </Card>
       )}

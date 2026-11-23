@@ -40,7 +40,7 @@ export default function TeamHealthScoreCard({ data, coachingSlot }: TeamHealthSc
         : '≈';
 
   return (
-    <Card className="mb-5 p-5">
+    <Card className="mb-6 border-b border-line pb-6">
       <div className="flex flex-col gap-5">
         <div className="min-w-0">
           <p className="text-base font-semibold text-gray-700">Team Health Score</p>
@@ -74,7 +74,7 @@ export default function TeamHealthScoreCard({ data, coachingSlot }: TeamHealthSc
         </div>
 
         {coachingSlot && (
-          <div className="border-t border-gray-100 pt-4">
+          <div className="border-t border-line pt-5">
             {coachingSlot}
           </div>
         )}

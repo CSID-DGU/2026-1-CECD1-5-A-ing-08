@@ -161,7 +161,7 @@ function PromiseReminderBanner() {
   if (overdue.length === 0 && dueSoon.length === 0) return null;
 
   return (
-    <Card className="mb-5 border border-amber-200 bg-amber-50 p-4">
+    <Card className="mb-6 border-l-2 border-caution pl-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold text-amber-900">
           약속 리마인더
@@ -280,12 +280,12 @@ export default function LeaderDashboard() {
         <PromiseReminderBanner />
 
         {teamHealthLoading && (
-          <Card className="mb-5 p-5">
+          <Card className="mb-6 border-b border-line pb-6">
             <p className="text-sm font-medium text-gray-500">Team Health Score를 불러오는 중입니다.</p>
           </Card>
         )}
         {!teamHealthLoading && teamHealthError && (
-          <Card className="mb-5 p-5">
+          <Card className="mb-6 border-b border-line pb-6">
             <ErrorState label="Team Health Score" />
           </Card>
         )}
@@ -306,16 +306,16 @@ export default function LeaderDashboard() {
           />
         )}
         {!teamHealthLoading && !teamHealthError && !teamHealthScore && (
-          <Card className="mb-5 p-5">
+          <Card className="mb-6 border-b border-line pb-6">
             <p className="text-sm font-medium text-gray-400">아직 Team Health Score를 계산할 데이터가 없습니다.</p>
           </Card>
         )}
 
         {/* ── Main Content Row ── */}
-        <div className="flex gap-4">
-          <div className="flex flex-1 min-w-0 flex-col gap-4">
+        <div className="flex gap-8">
+          <div className="flex flex-1 min-w-0 flex-col gap-6">
           {/* Chart Card */}
-          <Card className="p-4">
+          <Card>
             {/* Tab switcher */}
             <div className="flex gap-0 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
               <button
@@ -405,7 +405,7 @@ export default function LeaderDashboard() {
             )}
           </Card>
 
-          <Card className="p-4">
+          <Card className="border-t border-line pt-6">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Action Feedback
             </p>
@@ -425,9 +425,9 @@ export default function LeaderDashboard() {
           </div>
 
           {/* Right: Team Member Status */}
-          <div className="w-[360px] flex-shrink-0 flex flex-col gap-4">
+          <div className="w-[360px] flex-shrink-0 flex flex-col gap-6 border-l border-line pl-8">
             {/* Team Member Status */}
-            <Card className="p-4">
+            <Card>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 팀 멤버 상태
               </p>
@@ -449,7 +449,7 @@ export default function LeaderDashboard() {
               </div>
             </Card>
 
-            <Card className="p-4">
+            <Card className="border-t border-line pt-6">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 미이행 약속
               </p>

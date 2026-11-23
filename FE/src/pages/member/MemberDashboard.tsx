@@ -13,7 +13,7 @@ import type { MemberInsightPromise } from '@/types/memberInsight';
 
 function renderSectionFallback(message: string) {
   return (
-    <Card className="rounded-lg p-5">
+    <Card className="border-t border-line pt-7 first:border-t-0 first:pt-0">
       <p className="text-sm font-semibold text-slate-500">{message}</p>
     </Card>
   );
@@ -21,8 +21,8 @@ function renderSectionFallback(message: string) {
 
 function renderDashboardSkeleton() {
   return (
-    <div className="mx-auto flex max-w-[1120px] flex-col gap-5 p-5 sm:p-6">
-      <div className="rounded-lg bg-white p-5 sm:p-6">
+    <div className="mx-auto flex max-w-[1120px] flex-col gap-7 p-5 sm:p-6">
+      <div>
         <div className="flex flex-col gap-4 sm:flex-row">
           <Skeleton className="h-10 w-10 rounded-full" />
           <div className="flex-1">
@@ -42,7 +42,7 @@ function renderDashboardSkeleton() {
         <Skeleton className="mt-4 h-4 w-4/5" />
       </div>
 
-      <div className="rounded-lg border border-gray-100 bg-white p-4 sm:p-5">
+      <div className="border-t border-line pt-7">
         <Skeleton className="mb-3 h-3 w-32" />
         <div className="grid gap-3 lg:grid-cols-2">
           {[0, 1, 2, 3].map((item) => (
@@ -51,7 +51,7 @@ function renderDashboardSkeleton() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-gray-100 bg-white p-5 sm:p-6">
+      <div className="border-t border-line pt-7">
         <Skeleton className="h-5 w-40" />
         <Skeleton className="mt-2 h-3 w-72 max-w-full" />
         <div className="mt-5 space-y-4">
@@ -86,7 +86,7 @@ function PromisesByRoundSection({ memberId }: { memberId: string | number | unde
   }, [promises]);
 
   return (
-    <Card className="rounded-lg p-5 sm:p-6">
+    <Card className="border-t border-line pt-7">
       <h2 className="text-base font-semibold text-gray-900">회차별 약속</h2>
       <p className="mt-1 text-sm text-gray-500">미팅마다 오간 약속이에요. 지킨 약속은 체크해서 정리할 수 있어요.</p>
 
@@ -231,7 +231,7 @@ export default function MemberDashboard() {
         {loading ? (
           renderDashboardSkeleton()
         ) : (
-          <div className="mx-auto flex max-w-[1120px] flex-col gap-5 p-5 sm:p-6">
+          <div className="mx-auto flex max-w-[1120px] flex-col gap-7 p-5 sm:p-6">
             {data.stats ? (
               <CareerProfileCard stats={data.stats} onEdit={openEdit} />
             ) : (

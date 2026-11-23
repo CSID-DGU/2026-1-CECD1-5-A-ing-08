@@ -129,7 +129,7 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirst
         <p className="mt-4 text-center text-base tracking-wide text-slate-400">{scheduledDate}요일</p>
       )}
 
-      <Card className="mt-10 w-full rounded-[20px] border-gray-200 px-9 py-9 shadow-sm">
+      <Card className="mt-10 w-full">
         <div className="space-y-10">
           {SURVEY_QUESTIONS.map((q) => (
             <section key={q.id}>

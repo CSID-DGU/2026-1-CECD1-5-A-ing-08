@@ -57,7 +57,7 @@ function AccordionGroup({ date, meetingTitle, children }: { date: string; meetin
 
 function SectionCard({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
   return (
-    <Card className="p-5">
+    <Card className="border-t border-line pt-7">
       <h3 className="text-base font-semibold text-gray-800">{title}</h3>
       {desc && <p className="mt-1 text-sm text-gray-500">{desc}</p>}
       <div className="mt-4">{children}</div>
@@ -200,11 +200,11 @@ export default function LeaderMemberDetailPage() {
 
         {/* 멤버 상세 (리더 전용) */}
         {insightLoading ? (
-          <Card className="p-5">
+          <Card className="border-t border-line pt-7">
             <p className="text-sm text-gray-400">멤버 상세 정보를 불러오는 중입니다.</p>
           </Card>
         ) : insightError ? (
-          <Card className="p-5">
+          <Card className="border-t border-line pt-7">
             <p className="text-sm text-gray-400">{insightError}</p>
           </Card>
         ) : insight ? (

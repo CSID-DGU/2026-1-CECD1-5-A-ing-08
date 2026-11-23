@@ -160,7 +160,7 @@ export default function MemberReportPage() {
     return (
       <PageLayout>
         <div className="mx-auto max-w-[1120px] p-6">
-          <Card className="p-6">
+          <Card>
             <p className="text-sm text-gray-500">멤버 리포트를 불러오는 중입니다.</p>
           </Card>
         </div>
@@ -172,7 +172,7 @@ export default function MemberReportPage() {
     return (
       <PageLayout>
         <div className="mx-auto max-w-[1120px] p-6">
-          <Card className="p-6">
+          <Card>
             <p className="text-sm text-gray-500">{error ?? '멤버 리포트를 찾을 수 없습니다.'}</p>
           </Card>
         </div>
@@ -208,7 +208,7 @@ export default function MemberReportPage() {
               {report.confirmedAchievements.length}개
             </span>
           </div>
-          <Card className="p-4">
+          <Card>
             {report.confirmedAchievements.length === 0 ? (
               <p className="py-6 text-center text-sm text-gray-500">분석 결과가 없습니다.</p>
             ) : (
@@ -226,7 +226,7 @@ export default function MemberReportPage() {
             <h2 className="text-lg font-bold text-gray-950">리더의 약속 장부</h2>
             <span className="text-sm font-semibold text-gray-500">{sortedPromises.length}개</span>
           </div>
-          <Card className="p-4">
+          <Card>
             {sortedPromises.length === 0 ? (
               <p className="py-6 text-center text-sm text-gray-500">분석 결과가 없습니다.</p>
             ) : (
