@@ -1643,7 +1643,7 @@ public class AnalysisService {
         List<Meeting> meetings = meetingRepository.findByTeamIdOrderByCreatedAtDesc(teamId)
                 .stream().limit(20).collect(Collectors.toList());
         if (meetings.isEmpty()) {
-            return new TeamDashboardResponse(teamId, 0.0, "NO_DATA", List.of(), null, null);
+            return new TeamDashboardResponse(teamId, 0.0, "NO_DATA", List.of(), null, null, List.of());
         }
 
         List<Long> meetingIds = meetings.stream().map(Meeting::getId).toList();
@@ -1677,7 +1677,7 @@ public class AnalysisService {
                 .toList();
 
         if (scored.isEmpty()) {
-            return new TeamDashboardResponse(teamId, 0.0, "NO_DATA", List.of(), null, null);
+            return new TeamDashboardResponse(teamId, 0.0, "NO_DATA", List.of(), null, null, List.of());
         }
 
         double avg = scored.stream().mapToDouble(ScoredMeeting::health).average().orElse(0.0);
@@ -1754,7 +1754,17 @@ public class AnalysisService {
         }
 
         String statusNote = buildHealthStatusNote(rounded, avgSafety, avgSurvey, trend, hasComparison, alerts);
-        return new TeamDashboardResponse(teamId, rounded, trend, alerts, trendDelta, statusNote);
+
+        // 월별 평균 추이 (오래된 달 → 최근 달). 최근 20개 미팅 범위 안에서만 계산됨.
+        List<TeamDashboardResponse.MonthlyHealth> monthlyTrend = scored.stream()
+                .collect(Collectors.groupingBy(ScoredMeeting::month, java.util.TreeMap::new,
+                        Collectors.averagingDouble(ScoredMeeting::health)))
+                .entrySet().stream()
+                .map(e -> new TeamDashboardResponse.MonthlyHealth(
+                        e.getKey().toString(), Math.round(e.getValue() * 10.0) / 10.0))
+                .toList();
+
+        return new TeamDashboardResponse(teamId, rounded, trend, alerts, trendDelta, statusNote, monthlyTrend);
     }
 
     // Team Health Score가 왜 이 수준인지 일상 언어로 설명하는 짧은 문구 (규칙 기반, 결정적).

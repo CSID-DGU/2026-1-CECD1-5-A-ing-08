@@ -381,6 +381,10 @@ Authorization: Bearer <token> (LEADER)
     "teamHealthScore": 74.0,
     "trendDelta": 5.2,
     "statusNote": "이번 달 팀 소통 참여도가 지난 3개월 평균보다 높아졌습니다.",
+    "monthlyTrend": [
+      { "month": "2026-10", "score": 68.8 },
+      { "month": "2026-11", "score": 74.0 }
+    ],
     "alerts": [
       "강다은 — Initiative 최근 3회 평균 대비 100% 감소",
       "윤재원 — Safety Score 기준 이하 (Silent Risk)"
@@ -394,6 +398,7 @@ Authorization: Bearer <token> (LEADER)
 | `teamHealthScore` | number | `safetyScore_avg × 0.6 + surveyScore_avg × 0.4` |
 | `trendDelta` | number \| null | 이번 달 평균 − 직전 3개월 월별 평균의 평균. 양수: 개선, 음수: 하락. 데이터 부족 시 `null` |
 | `statusNote` | string \| null | 규칙 기반 평문 요약. 내부 지표 용어 미포함. 데이터 부족 시 `null` |
+| `monthlyTrend` | {month, score}[] | 월별 헬스 스코어 평균 (`month`: `YYYY-MM`, 오래된 달 → 최근 달). 최근 미팅 20건 범위에서 계산. 데이터 없으면 `[]` |
 | `alerts` | string[] | 30% 이상 하락한 멤버 알림. Fact-Based 문구, AI 해석 라벨 없음 |
 
 ---
@@ -2306,3 +2311,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-11-12 | v3.8 | `gaps.alignmentGap`: 서베이 `topic`을 전사와 실제로 비교하도록 수정 (기존엔 주제 문자열이 프롬프트에 전달되지 않음). 주제별 결과 단계를 PRD 점수표(0/25/40/60/85/100)로 서버에서 계산해 평균. `detail`은 주제별 한 줄(`\n` 구분), 전사에서 확인된 원문 인용·타임스탬프 포함(화자는 녹음 전사에 라벨이 없어 표시하지 않음). 서베이 주제가 없거나 무효·분석 실패 시 `score`·`detail` 모두 `null` (기존: 50, "서베이 정보 없음"). |
 | 2026-11-20 | v3.9 | 7.1-T `analyze-test`: COMPLETED 미팅도 재분석 허용 (TRANSCRIBING/ANALYZING일 때만 409). 재분석 시 기존 분석 결과 삭제 후 저장하며 `meeting_id` unique 충돌 수정. |
 | 2026-11-20 | v4.0 | **5.5절 신규**: `PATCH /meetings/{id}` 미팅 정보(제목·일정) 수정 (리더 전용, 분석 상태 무관, 멤버 변경 미지원). |
+| 2026-11-23 | v4.1 | 4.1 `GET /teams/{teamId}/dashboard` 응답에 `monthlyTrend` 추가 — 월별 헬스 스코어 평균 추이 (리더 대시보드 꺾은선 그래프용). |
