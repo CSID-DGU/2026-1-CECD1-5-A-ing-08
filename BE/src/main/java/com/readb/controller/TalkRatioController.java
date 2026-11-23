@@ -1,12 +1,17 @@
 package com.readb.controller;
 
 import com.readb.common.response.ApiResponse;
+import com.readb.common.exception.BusinessException;
+import com.readb.common.exception.ErrorCode;
+import com.readb.domain.meeting.Meeting;
 import com.readb.domain.talk.TalkSession;
 import com.readb.dto.talk.TalkRatioEvent;
+import com.readb.repository.MeetingRepository;
 import com.readb.service.talk.SseEmitterRegistry;
 import com.readb.service.talk.TalkRatioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -20,11 +25,14 @@ public class TalkRatioController {
 
     private final TalkRatioService talkRatioService;
     private final SseEmitterRegistry sseEmitterRegistry;
+    private final MeetingRepository meetingRepository;
 
     @PostMapping("/calibrate/leader")
     public ApiResponse<Void> calibrateLeader(
             @PathVariable Long meetingId,
+            @AuthenticationPrincipal Long userId,
             @RequestParam("audio") MultipartFile audio) throws IOException {
+        requireLeader(meetingId, userId);
         talkRatioService.calibrateLeader(meetingId, audio);
         return ApiResponse.ok();
     }
@@ -32,7 +40,9 @@ public class TalkRatioController {
     @PostMapping("/calibrate/member")
     public ApiResponse<Void> calibrateMember(
             @PathVariable Long meetingId,
+            @AuthenticationPrincipal Long userId,
             @RequestParam("audio") MultipartFile audio) throws IOException {
+        requireLeader(meetingId, userId);
         talkRatioService.calibrateMember(meetingId, audio);
         return ApiResponse.ok();
     }
@@ -40,13 +50,17 @@ public class TalkRatioController {
     @PostMapping("/audio-chunk")
     public ApiResponse<Void> processChunk(
             @PathVariable Long meetingId,
-            @RequestParam("audio") MultipartFile audio) throws IOException {
-        talkRatioService.processChunk(meetingId, audio);
+            @AuthenticationPrincipal Long userId,
+            @RequestParam("audio") MultipartFile audio,
+            @RequestParam(value = "sequence", required = false) Integer sequence) throws IOException {
+        requireLeader(meetingId, userId);
+        talkRatioService.processChunk(meetingId, audio, sequence);
         return ApiResponse.ok();
     }
 
     @GetMapping(value = "/talk-ratio/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter stream(@PathVariable Long meetingId) {
+    public SseEmitter stream(@PathVariable Long meetingId, @AuthenticationPrincipal Long userId) {
+        requireParticipant(meetingId, userId);
         return sseEmitterRegistry.register(meetingId);
     }
 
@@ -55,11 +69,26 @@ public class TalkRatioController {
      * 현재 진행 중인 미팅의 실시간 발화 비율을 반환한다.
      */
     @GetMapping("/talk-ratio/current")
-    public ApiResponse<TalkRatioEvent> currentRatio(@PathVariable Long meetingId) {
+    public ApiResponse<TalkRatioEvent> currentRatio(@PathVariable Long meetingId, @AuthenticationPrincipal Long userId) {
+        requireParticipant(meetingId, userId);
         TalkSession session = talkRatioService.getSession(meetingId);
         if (session == null || !session.isCalibrated()) {
-            return ApiResponse.ok(TalkRatioEvent.of(0.0));
+            return ApiResponse.ok(TalkRatioEvent.empty());
         }
-        return ApiResponse.ok(TalkRatioEvent.of(session.leaderRatio()));
+        return ApiResponse.ok(TalkRatioEvent.of(session));
+    }
+
+    private void requireLeader(Long meetingId, Long userId) {
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
+        if (!meeting.getLeaderId().equals(userId)) throw new BusinessException(ErrorCode.FORBIDDEN);
+    }
+
+    private void requireParticipant(Long meetingId, Long userId) {
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
+        if (!meeting.getLeaderId().equals(userId) && !meeting.getMemberId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
     }
 }
