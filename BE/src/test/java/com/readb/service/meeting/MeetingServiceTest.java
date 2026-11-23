@@ -14,6 +14,7 @@ import com.readb.repository.RecordingRepository;
 import com.readb.repository.SurveyRepository;
 import com.readb.repository.UserRepository;
 import com.readb.service.analysis.AnalysisOrchestrator;
+import com.readb.service.talk.TalkRatioService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,11 +58,14 @@ class MeetingServiceTest {
     @Mock
     private PromiseRepository promiseRepository;
 
+    @Mock
+    private TalkRatioService talkRatioService;
+
     private MeetingService meetingService;
 
     @BeforeEach
     void setUp() {
-        meetingService = new MeetingService(meetingRepository, recordingRepository, userRepository, surveyRepository, analysisOrchestrator, careerEventRepository, promiseRepository);
+        meetingService = new MeetingService(meetingRepository, recordingRepository, userRepository, surveyRepository, analysisOrchestrator, careerEventRepository, promiseRepository, talkRatioService);
     }
 
     @Test

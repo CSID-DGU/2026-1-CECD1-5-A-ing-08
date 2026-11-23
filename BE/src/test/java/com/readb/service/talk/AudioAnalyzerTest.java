@@ -1,49 +1,51 @@
 package com.readb.service.talk;
 
+import com.readb.domain.talk.ClassifiedSpeech;
 import com.readb.domain.talk.SpeakerProfile;
 import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.*;
 
 class AudioAnalyzerTest {
-
     private final AudioAnalyzer analyzer = new AudioAnalyzer();
 
-    private byte[] generateSinePcm(double amplitude, int durationMs) {
-        int sampleRate = 16000;
-        int samples = sampleRate * durationMs / 1000;
-        byte[] pcm = new byte[samples * 2];
-        for (int i = 0; i < samples; i++) {
-            short val = (short) (amplitude * Short.MAX_VALUE * Math.sin(2 * Math.PI * 440 * i / sampleRate));
-            pcm[i * 2] = (byte) (val & 0xFF);
-            pcm[i * 2 + 1] = (byte) ((val >> 8) & 0xFF);
+    private byte[] tone(double amplitude, double hz, int durationMs) {
+        int count = 16000 * durationMs / 1000;
+        byte[] pcm = new byte[count * 2];
+        for (int i = 0; i < count; i++) {
+            short value = (short) (amplitude * Short.MAX_VALUE * Math.sin(2 * Math.PI * hz * i / 16000));
+            pcm[i * 2] = (byte) value;
+            pcm[i * 2 + 1] = (byte) (value >>> 8);
         }
         return pcm;
     }
 
-    private byte[] generateSilencePcm(int durationMs) {
-        return new byte[16000 * durationMs / 1000 * 2];
+    @Test
+    void referenceNeedsAtLeastOneSecondOfSpeech() {
+        assertThatThrownBy(() -> analyzer.extractProfile(new byte[16000 * 5 * 2]))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    void extractProfile_highAmplitude_returnsHighMeanRms() {
-        byte[] pcm = generateSinePcm(0.8, 5000);
-        SpeakerProfile profile = analyzer.extractProfile(pcm);
-        assertThat(profile.meanRms()).isGreaterThan(0.4);
+    void spectralAndPitchFeaturesIgnoreLoudnessDifference() {
+        SpeakerProfile leader = analyzer.extractProfile(tone(0.4, 180, 5000));
+        SpeakerProfile member = analyzer.extractProfile(tone(0.4, 320, 5000));
+
+        ClassifiedSpeech result = analyzer.classifyChunk(tone(0.08, 180, 3000), leader, member);
+
+        assertThat(result.leaderMs()).isGreaterThan(2500);
+        assertThat(result.memberMs()).isZero();
     }
 
     @Test
-    void extractProfile_silence_returnsNearZeroMeanRms() {
-        byte[] pcm = generateSilencePcm(5000);
-        SpeakerProfile profile = analyzer.extractProfile(pcm);
-        assertThat(profile.meanRms()).isLessThan(0.01);
-    }
+    void shortReplyIsUnclassifiedRatherThanAssignedToLeader() {
+        SpeakerProfile leader = analyzer.extractProfile(tone(0.4, 180, 5000));
+        SpeakerProfile member = analyzer.extractProfile(tone(0.4, 320, 5000));
 
-    @Test
-    void classifyChunk_leaderLouder_assignsMoreTimeToLeader() {
-        SpeakerProfile leaderProfile = new SpeakerProfile(0.6, 0.05);
-        SpeakerProfile memberProfile = new SpeakerProfile(0.2, 0.05);
-        byte[] chunk = generateSinePcm(0.6, 10000);
-        long[] result = analyzer.classifyChunk(chunk, leaderProfile, memberProfile);
-        assertThat(result[0]).isGreaterThan(result[1]);
+        ClassifiedSpeech result = analyzer.classifyChunk(tone(0.4, 320, 300), leader, member);
+
+        assertThat(result.leaderMs()).isZero();
+        assertThat(result.memberMs()).isZero();
+        assertThat(result.unclassifiedMs()).isGreaterThan(0);
     }
 }
