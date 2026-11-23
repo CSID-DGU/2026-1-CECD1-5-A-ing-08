@@ -6,11 +6,11 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ReadB 색 체계 (잉크 네이비). 값은 styles/globals.css의 --rb-* 와 동일하게 유지.
+        // ReadB 색 체계. 값은 styles/globals.css의 --rb-* 와 동일하게 유지.
         brand: {
-          DEFAULT: '#1F3A5F',
-          hover: '#162C49',
-          soft: '#E8EDF3',
+          DEFAULT: '#7185F2',
+          hover: '#5A6FE0',
+          soft: '#EEF0FD',
         },
         ink: {
           DEFAULT: '#1A1D29',

@@ -46,7 +46,7 @@ const QUADRANT_STYLE: Record<RadarQuadrant, { fill: string; stroke: string; text
   STABLE: { fill: 'rgba(32,201,151,0.65)', stroke: '#20C997', text: '#065F46', bg: '#D1FAE5' },
   SILENT_RISK: { fill: 'rgba(245,158,11,0.65)', stroke: '#F59E0B', text: '#92400E', bg: '#FEF3C7' },
   EXPLICIT_RISK: { fill: 'rgba(250,82,82,0.65)', stroke: '#FA5252', text: '#9F1239', bg: '#FED7D7' },
-  CONSERVATIVE: { fill: 'rgba(31,58,95,0.45)', stroke: '#1F3A5F', text: '#1F3A5F', bg: '#E8EDF3' },
+  CONSERVATIVE: { fill: 'rgba(113,133,242,0.45)', stroke: '#7185F2', text: '#7185F2', bg: '#EEF0FD' },
 };
 
 // 분기점 45: safety 기준선이 40(발화 없음)이라, 발화가 조금이라도 있으면 상단으로 가도록 BE와 정렬.
@@ -248,7 +248,7 @@ function CustomTooltip({ active, payload, threshold, view = 'quadrant', gapThres
             <strong style={{ color: '#111827' }}>{point.safetyScore}%</strong>
           </div>
           <div style={{ height: 6, width: barWidth, background: '#E5E7EB', borderRadius: 4 }}>
-            <div style={{ width: safetyWidth, height: '100%', background: 'rgba(31,58,95,0.55)', borderRadius: 4 }} />
+            <div style={{ width: safetyWidth, height: '100%', background: 'rgba(113,133,242,0.55)', borderRadius: 4 }} />
           </div>
         </div>
       </div>

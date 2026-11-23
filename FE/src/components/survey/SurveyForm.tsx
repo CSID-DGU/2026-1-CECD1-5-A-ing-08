@@ -148,7 +148,7 @@ export default function SurveyForm({ leaderName, scheduledAt, meetingId, isFirst
                       }}
                       className={`flex aspect-square min-h-[72px] flex-col items-center justify-center rounded-[16px] border text-center text-xs font-bold transition-colors whitespace-pre-line ${
                         isSelected
-                          ? 'border-brand bg-brand-soft text-brand shadow-[0_0_0_1px_rgba(31,58,95,0.9)]'
+                          ? 'border-brand bg-brand-soft text-brand shadow-[0_0_0_1px_rgba(113,133,242,0.9)]'
                           : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
                       }`}
                     >
