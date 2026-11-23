@@ -6,6 +6,7 @@ import com.readb.domain.team.Team;
 import com.readb.domain.user.User;
 import com.readb.dto.team.TeamCreateRequest;
 import com.readb.dto.team.TeamCreateResponse;
+import com.readb.dto.team.TeamInviteCodeResponse;
 import com.readb.dto.team.TeamJoinRequest;
 import com.readb.dto.team.TeamJoinResponse;
 import com.readb.dto.team.TeamMemberResponse;
@@ -36,7 +37,7 @@ public class TeamService {
             throw new BusinessException(ErrorCode.ALREADY_IN_TEAM);
         }
 
-        String inviteCode = "READB-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        String inviteCode = generateInviteCode();
 
         Team team = Team.builder()
                 .name(request.name())
@@ -77,6 +78,27 @@ public class TeamService {
         }
         team.rename(request.name().trim());
         return new TeamUpdateResponse(team.getId(), team.getName());
+    }
+
+    // 초대 코드를 새로 만든다. 기존 코드는 즉시 쓸 수 없게 되고, 이미 가입한 멤버에게는 영향이 없다.
+    @Transactional
+    public TeamInviteCodeResponse regenerateInviteCode(Long requesterId, Long teamId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.TEAM_NOT_FOUND));
+        if (!team.getLeaderId().equals(requesterId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        team.changeInviteCode(generateInviteCode());
+        return new TeamInviteCodeResponse(team.getId(), team.getInviteCode());
+    }
+
+    private String generateInviteCode() {
+        // 6자리 16진수라 충돌 가능성은 낮지만, unique 제약 위반을 피하려고 사용 중인 코드면 다시 뽑는다.
+        for (int i = 0; i < 5; i++) {
+            String code = "READB-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+            if (!teamRepository.existsByInviteCode(code)) return code;
+        }
+        throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
     }
 
     @Transactional(readOnly = true)

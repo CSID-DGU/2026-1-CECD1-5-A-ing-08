@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface TeamRepository extends JpaRepository<Team, Long> {
     List<Team> findByLeaderId(Long leaderId);
     Optional<Team> findByInviteCode(String inviteCode);
+
+    boolean existsByInviteCode(String inviteCode);
 }

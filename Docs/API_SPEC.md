@@ -411,6 +411,36 @@ Authorization: Bearer <token> (LEADER)
 
 ---
 
+### 3.2c 초대 코드 재발급 (리더 전용)
+```
+POST /api/v1/teams/{teamId}/invite-code
+Authorization: Bearer <token> (LEADER)
+```
+Request Body 없음.
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "data": {
+    "teamId": 1,
+    "inviteCode": "READB-9F3C1A"
+  }
+}
+```
+
+> 해당 팀의 리더만 호출할 수 있다. 기존 코드는 즉시 무효가 되고(3.2 참여 시 `TEAM_NOT_FOUND`), 이미 가입한 멤버에게는 영향이 없다.
+> FE는 응답의 `inviteCode`로 `authStore`의 사용자 정보를 갱신한다.
+
+**에러**
+| 코드 | HTTP | 상황 |
+|------|------|------|
+| FORBIDDEN | 403 | 멤버이거나 다른 팀의 리더 |
+| TEAM_NOT_FOUND | 404 | 존재하지 않는 팀 |
+
+---
+
 ### 3.3 팀 멤버 목록 조회
 ```
 GET /api/v1/teams/{teamId}/members
@@ -2398,3 +2428,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-11-23 | v4.2 | 2.1·2.2 `bio`(한 줄 소개, 최대 100자) 추가, 2.2 name 2~20자·jobTitle 50자 검증을 실코드에 반영. **2.3절 신규**: `PATCH /users/me/password` 비밀번호 변경 (현재 비밀번호 확인, INVALID_CURRENT_PASSWORD 400). DB: `users.bio` 컬럼 추가 (`BE/db/migrations/2026-11-23_add_bio_to_users.sql`). |
 | 2026-11-23 | v4.3 | **3.2b절 신규**: `PATCH /teams/{teamId}` 팀 이름 변경 (해당 팀 리더 전용, 2~30자). |
 | 2026-11-23 | v4.4 | 1.2 refreshToken 만료 14일 → 12시간. 1.3 갱신 응답을 실코드 기준 `accessToken`만으로 정정. 인증 실패 시 403(본문 없음) → 401 `UNAUTHORIZED`. FE 토큰 저장소 localStorage → sessionStorage. |
+| 2026-11-23 | v4.5 | **3.2c절 신규**: `POST /teams/{teamId}/invite-code` 초대 코드 재발급 (해당 팀 리더 전용, 기존 코드 즉시 무효). |

@@ -8,6 +8,7 @@ import com.readb.dto.team.TeamActionPlanResponse;
 import com.readb.dto.team.TeamCoachingResponse;
 import com.readb.dto.team.TeamCreateRequest;
 import com.readb.dto.team.TeamCreateResponse;
+import com.readb.dto.team.TeamInviteCodeResponse;
 import com.readb.dto.team.TeamDashboardResponse;
 import com.readb.dto.team.TeamJoinRequest;
 import com.readb.dto.team.TeamJoinResponse;
@@ -58,6 +59,14 @@ public class TeamController {
             @PathVariable Long teamId,
             @Valid @RequestBody TeamUpdateRequest request) {
         return ApiResponse.ok(teamService.renameTeam(leaderId, teamId, request));
+    }
+
+    @PostMapping("/{teamId}/invite-code")
+    @PreAuthorize("hasRole('LEADER')")
+    public ApiResponse<TeamInviteCodeResponse> regenerateInviteCode(
+            @AuthenticationPrincipal Long leaderId,
+            @PathVariable Long teamId) {
+        return ApiResponse.ok(teamService.regenerateInviteCode(leaderId, teamId));
     }
 
     @GetMapping("/{teamId}/members")
