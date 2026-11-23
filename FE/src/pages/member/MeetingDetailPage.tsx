@@ -8,6 +8,7 @@ import SurveyForm from "@/components/survey/SurveyForm";
 import AnalysisLoading from "@/components/loading/AnalysisLoading";
 import type { MeetingDetail } from "@/types/meeting";
 import MemberReportPage from "@/pages/member/MemberReportPage";
+import UserAvatar from "@/features/user/UserAvatar";
 
 export default function MemberMeetingDetailPage() {
   const { meetingId } = useParams<{ meetingId: string }>();
@@ -117,7 +118,7 @@ function MeetingHeader({ meeting }: { meeting: MeetingDetail }) {
         </span>
         <span>{meeting.leaderName} (리더)</span>
         <span className="text-gray-300">↔</span>
-        <span className="w-6 h-6 rounded-full bg-pink-400 flex items-center justify-center text-white text-xs" />
+        <UserAvatar userId={meeting.memberId} className="w-6 h-6 bg-pink-400 text-xs" />
         <span>나</span>
       </div>
     </div>

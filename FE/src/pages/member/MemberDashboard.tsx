@@ -7,6 +7,7 @@ import Card from '@/components/ui/Card';
 import Skeleton from '@/components/ui/Skeleton';
 import { useCareerDashboard } from '@/features/member/useCareerDashboard';
 import { useMemberChecklist } from '@/features/meeting/useMemberChecklist';
+import { useProfileImage } from '@/features/user/useProfileImage';
 import { useAuthStore } from '@/stores/authStore';
 import { updateProfile } from '@/api/user';
 import type { MemberInsightPromise } from '@/types/memberInsight';
@@ -151,6 +152,7 @@ export default function MemberDashboard() {
   const memberId = user?.id;
   const [refreshKey, setRefreshKey] = useState(0);
   const { data, loading, errors } = useCareerDashboard(memberId, refreshKey);
+  const profileImageUrl = useProfileImage(memberId);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState('');
@@ -233,7 +235,7 @@ export default function MemberDashboard() {
         ) : (
           <div className="mx-auto flex max-w-[1120px] flex-col gap-7 p-5 sm:p-6">
             {data.stats ? (
-              <CareerProfileCard stats={data.stats} onEdit={openEdit} />
+              <CareerProfileCard stats={data.stats} onEdit={openEdit} imageUrl={profileImageUrl} />
             ) : (
               renderSectionFallback(
                 errors.stats ?? '프로필 정보를 불러오지 못했습니다. 다시 시도해주세요.',

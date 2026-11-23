@@ -54,3 +54,19 @@ export async function fetchMe(): Promise<User> {
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   await apiClient.patch('/api/v1/users/me/password', { currentPassword, newPassword });
 }
+
+export async function uploadProfileImage(image: Blob): Promise<void> {
+  const form = new FormData();
+  form.append('image', image, image.type === 'image/webp' ? 'profile.webp' : 'profile.jpg');
+  await apiClient.put('/api/v1/users/me/profile-image', form);
+}
+
+export async function deleteProfileImage(): Promise<void> {
+  await apiClient.delete('/api/v1/users/me/profile-image');
+}
+
+// 이미지가 없으면(204) null
+export async function fetchProfileImage(userId: string): Promise<Blob | null> {
+  const res = await apiClient.get<Blob>(`/api/v1/users/${userId}/profile-image`, { responseType: 'blob' });
+  return res.status === 204 || res.data.size === 0 ? null : res.data;
+}
