@@ -685,6 +685,36 @@ Authorization: Bearer <token>
 
 ---
 
+### 5.5 미팅 정보 수정 (리더)
+```
+PATCH /api/v1/meetings/{meetingId}
+Authorization: Bearer <token>
+```
+**인증 필요**: O (리더 전용)
+
+미팅 상태(진행 전/분석 중/완료/실패)와 무관하게 제목과 일정을 수정한다. 멤버(미팅 상대) 변경은 지원하지 않는다.
+두 필드를 **항상 함께** 보낸다 — 수정 폼은 현재 값을 미리 채우므로 하나만 바꿔도 나머지는 기존 값 그대로 전송된다. 제목 앞뒤 공백은 제거되어 저장된다.
+
+**Request Body**
+```json
+{ "title": "11월 커리어 면담", "scheduledAt": "2026-11-27T14:30:00" }
+```
+
+| 필드 | 필수 | 설명 |
+|------|------|------|
+| title | O | 1~100자, 공백만은 불가 |
+| scheduledAt | X | ISO-8601 로컬 시각. `null`이면 일정 미정으로 저장 |
+
+**Response** `200` — `data: null`
+
+| 에러 코드 | 상태 | 의미 |
+|-----------|------|------|
+| INVALID_INPUT | 400 | title 누락·공백·100자 초과 |
+| MEETING_NOT_FOUND | 404 | 미팅 없음 |
+| FORBIDDEN | 403 | 리더 본인 미팅 아님 |
+
+---
+
 ## 6. SURVEY (사전 서베이)
 
 ### 6.1 사전 서베이 제출 (멤버)
@@ -878,6 +908,7 @@ Content-Type: application/json
 ```
 
 > 녹음 업로드·STT를 건너뛰고 전달받은 스크립트로 7.1과 동일한 분석(Recording 저장 → 분석 → 상태 COMPLETED/FAILED)을 진행. 미팅 리더만 호출 가능.
+> 이미 분석이 끝난(COMPLETED) 미팅도 재호출하면 기존 분석 결과를 덮어써 재분석한다 (반복 분석 테스트용).
 
 **Request**
 ```json
@@ -901,7 +932,7 @@ Content-Type: application/json
 | INVALID_INPUT | 400 | transcript 누락/공백 |
 | FORBIDDEN | 403 | 미팅 리더가 아님 |
 | MEETING_NOT_FOUND | 404 | 존재하지 않는 미팅 |
-| ANALYSIS_IN_PROGRESS | 409 | 이미 분석이 진행 중인 미팅 |
+| ANALYSIS_IN_PROGRESS | 409 | 분석이 진행 중인 미팅 (TRANSCRIBING/ANALYZING) |
 
 ---
 
@@ -1063,8 +1094,8 @@ Authorization: Bearer <token> (LEADER)
 
     "gaps": {
       "alignmentGap": {
-        "score": 35,
-        "detail": "서베이에서 선택한 '커리어 성장' 주제 — 언급은 되었으나 구체적 결론 없음"
+        "score": 60,
+        "detail": "'커리어 성장' — 논의했으나 결론·다음 할 일 없음 (12:34 \"요즘 커리어 방향이 고민이에요\")"
       },
       "honestyGap": {
         "surveyScore": 87,
@@ -2272,3 +2303,6 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-10-30 | v3.5 | 7.1-T `POST /meetings/{meetingId}/analyze-test` 명세 추가 — 스크립트(`[leader]`/`[member]` 라벨) 기반 분석을 202 비동기로 전환, 리더 권한 체크·Recording 저장·상태 전환 적용 (기존: 인증만, 동기, `Map` body). |
 | 2026-10-31 | v3.6 | A.0 파이프라인 STT를 OpenAI `whisper-1` → Groq `whisper-large-v3`(OpenAI 호환 엔드포인트)로 교체. 환경변수 `OPENAI_API_KEY` → `GROQ_API_KEY`. API 요청·응답 형식 변경 없음. |
 | 2026-11-06 | v3.7 | `GET /members/me/speech-trend`(명세 외, v2.4에서 제거된 엔드포인트) 응답 필드 `dissentCount` → `constructiveDissentCount`. 집계 키를 `"dissent"` → `"constructiveDissent"`로 바로잡아 D 횟수가 항상 0이던 버그 수정. 내부 baseline 키 `prev_avg_dissent` → `prev_avg_constructiveDissent`. |
+| 2026-11-12 | v3.8 | `gaps.alignmentGap`: 서베이 `topic`을 전사와 실제로 비교하도록 수정 (기존엔 주제 문자열이 프롬프트에 전달되지 않음). 주제별 결과 단계를 PRD 점수표(0/25/40/60/85/100)로 서버에서 계산해 평균. `detail`은 주제별 한 줄(`\n` 구분), 전사에서 확인된 원문 인용·타임스탬프 포함(화자는 녹음 전사에 라벨이 없어 표시하지 않음). 서베이 주제가 없거나 무효·분석 실패 시 `score`·`detail` 모두 `null` (기존: 50, "서베이 정보 없음"). |
+| 2026-11-20 | v3.9 | 7.1-T `analyze-test`: COMPLETED 미팅도 재분석 허용 (TRANSCRIBING/ANALYZING일 때만 409). 재분석 시 기존 분석 결과 삭제 후 저장하며 `meeting_id` unique 충돌 수정. |
+| 2026-11-20 | v4.0 | **5.5절 신규**: `PATCH /meetings/{id}` 미팅 정보(제목·일정) 수정 (리더 전용, 분석 상태 무관, 멤버 변경 미지원). |

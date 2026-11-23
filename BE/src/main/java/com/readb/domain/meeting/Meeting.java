@@ -45,4 +45,9 @@ public class Meeting {
     public void updateStatus(MeetingStatus status) {
         this.status = status;
     }
+
+    public void updateInfo(String title, LocalDateTime scheduledAt) {
+        this.title = title;
+        this.scheduledAt = scheduledAt;
+    }
 }
