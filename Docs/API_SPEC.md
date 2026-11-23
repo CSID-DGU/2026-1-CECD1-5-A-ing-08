@@ -204,6 +204,7 @@ Authorization: Bearer <token>
     "name": "강다은",
     "role": "MEMBER",
     "jobTitle": "시니어 FE 엔지니어",
+    "bio": "결제 시스템을 만드는 프론트엔드 개발자",
     "teamId": 1,
     "teamName": "Product A팀"
   }
@@ -222,14 +223,16 @@ Authorization: Bearer <token>
 ```json
 {
   "name": "강다은",
-  "jobTitle": "시니어 FE 엔지니어"
+  "jobTitle": "시니어 FE 엔지니어",
+  "bio": "결제 시스템을 만드는 프론트엔드 개발자"
 }
 ```
 
 | 필드 | 타입 | 필수 | 검증 규칙 |
 |------|------|------|-----------|
 | name | string | O | 2~20자 (공백 불가) |
-| jobTitle | string | X | 최대 50자. `null` 또는 빈 문자열 전송 시 직함 제거 |
+| jobTitle | string | X | 최대 50자. 생략·`null`이면 기존 값 유지, 빈 문자열이면 직함 제거 |
+| bio | string | X | 한 줄 소개, 최대 100자. 생략·`null`이면 기존 값 유지, 빈 문자열이면 제거 |
 
 **Response** `200`
 ```json
@@ -243,6 +246,7 @@ Authorization: Bearer <token>
     "name": "강다은",
     "role": "MEMBER",
     "jobTitle": "시니어 FE 엔지니어",
+    "bio": "결제 시스템을 만드는 프론트엔드 개발자",
     "teamId": 1,
     "teamName": "Product A팀"
   }
@@ -255,7 +259,39 @@ Authorization: Bearer <token>
 **에러**
 | 코드 | HTTP | 상황 |
 |------|------|------|
-| INVALID_INPUT | 400 | name 빈 값 |
+| INVALID_INPUT | 400 | name 빈 값 또는 길이 초과 (jobTitle 50자, bio 100자) |
+| UNAUTHORIZED | 401 | 토큰 없음/만료 |
+
+---
+
+### 2.3 내 비밀번호 변경
+```
+PATCH /api/v1/users/me/password
+Authorization: Bearer <token>
+```
+
+**Request Body**
+```json
+{
+  "currentPassword": "oldPass1!",
+  "newPassword": "newPass2@"
+}
+```
+
+| 필드 | 타입 | 필수 | 검증 규칙 |
+|------|------|------|-----------|
+| currentPassword | string | O | 현재 비밀번호 |
+| newPassword | string | O | 회원가입과 동일: 8자 이상, 영문·숫자·특수문자(`@$!%*#?&`) 포함 |
+
+**Response** `200` — `data` 없음
+
+> 로그인한 상태에서 현재 비밀번호를 확인한 뒤 변경한다. 기존 토큰은 그대로 유효하다.
+
+**에러**
+| 코드 | HTTP | 상황 |
+|------|------|------|
+| INVALID_CURRENT_PASSWORD | 400 | 현재 비밀번호 불일치 |
+| INVALID_INPUT | 400 | 새 비밀번호 규칙 위반 |
 | UNAUTHORIZED | 401 | 토큰 없음/만료 |
 
 ---
@@ -1939,6 +1975,7 @@ Authorization: Bearer <token> (LEADER)
 |------|------|------|
 | `EMAIL_ALREADY_EXISTS` | 409 | 이미 사용 중인 이메일 |
 | `INVALID_CREDENTIALS` | 401 | 이메일 또는 비밀번호 불일치 |
+| `INVALID_CURRENT_PASSWORD` | 400 | 비밀번호 변경 시 현재 비밀번호 불일치 |
 | `EXPIRED_TOKEN` | 401 | 액세스/리프레시 토큰 만료 |
 | `INVALID_TOKEN` | 401 | 유효하지 않은 토큰 |
 | `UNAUTHORIZED` | 401 | 인증이 필요합니다 |
@@ -2312,3 +2349,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-11-20 | v3.9 | 7.1-T `analyze-test`: COMPLETED 미팅도 재분석 허용 (TRANSCRIBING/ANALYZING일 때만 409). 재분석 시 기존 분석 결과 삭제 후 저장하며 `meeting_id` unique 충돌 수정. |
 | 2026-11-20 | v4.0 | **5.5절 신규**: `PATCH /meetings/{id}` 미팅 정보(제목·일정) 수정 (리더 전용, 분석 상태 무관, 멤버 변경 미지원). |
 | 2026-11-23 | v4.1 | 4.1 `GET /teams/{teamId}/dashboard` 응답에 `monthlyTrend` 추가 — 월별 헬스 스코어 평균 추이 (리더 대시보드 꺾은선 그래프용). |
+| 2026-11-23 | v4.2 | 2.1·2.2 `bio`(한 줄 소개, 최대 100자) 추가, 2.2 name 2~20자·jobTitle 50자 검증을 실코드에 반영. **2.3절 신규**: `PATCH /users/me/password` 비밀번호 변경 (현재 비밀번호 확인, INVALID_CURRENT_PASSWORD 400). DB: `users.bio` 컬럼 추가 (`BE/db/migrations/2026-11-23_add_bio_to_users.sql`). |

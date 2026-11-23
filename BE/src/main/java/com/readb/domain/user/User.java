@@ -34,6 +34,9 @@ public class User {
     @Column(name = "job_title", length = 100)
     private String jobTitle;
 
+    @Column(length = 100)
+    private String bio;
+
     @Column(name = "team_id")
     private Long teamId;
 
@@ -41,9 +44,14 @@ public class User {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    public void updateProfile(String name, String jobTitle) {
+    public void updateProfile(String name, String jobTitle, String bio) {
         this.name = name;
         if (jobTitle != null) this.jobTitle = jobTitle.isBlank() ? null : jobTitle.trim();
+        if (bio != null) this.bio = bio.isBlank() ? null : bio.trim();
+    }
+
+    public void changePassword(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public void assignTeam(Long teamId) {

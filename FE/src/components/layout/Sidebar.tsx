@@ -358,7 +358,9 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           <NavLink
             key={item.path}
             to={item.path}
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm mb-0.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+            className={({ isActive }) => `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm mb-0.5 transition-colors ${
+              isActive ? 'bg-gray-200 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            } ${isCollapsed ? 'justify-center' : ''}`}
           >
             <span className="text-gray-500 flex-shrink-0">{item.icon}</span>
             {!isCollapsed && item.label}

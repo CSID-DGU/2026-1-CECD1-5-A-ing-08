@@ -14,6 +14,7 @@ CREATE TABLE public.users (
     name            VARCHAR(255) NOT NULL,
     role            VARCHAR(255) NOT NULL,
     job_title       VARCHAR(100),
+    bio             VARCHAR(100),
     team_id         BIGINT,
     created_at      TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_users_email UNIQUE (email),

@@ -1,6 +1,7 @@
 package com.readb.controller;
 
 import com.readb.common.response.ApiResponse;
+import com.readb.dto.user.PasswordChangeRequest;
 import com.readb.dto.user.UserProfileResponse;
 import com.readb.dto.user.UserUpdateRequest;
 import com.readb.service.user.UserService;
@@ -26,5 +27,13 @@ public class UserController {
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody UserUpdateRequest request) {
         return ApiResponse.ok(userService.updateMyProfile(userId, request));
+    }
+
+    @PatchMapping("/me/password")
+    public ApiResponse<Void> changeMyPassword(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody PasswordChangeRequest request) {
+        userService.changePassword(userId, request);
+        return ApiResponse.ok();
     }
 }

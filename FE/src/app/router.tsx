@@ -14,6 +14,7 @@ import MemberMeetingDetailPage from '@/pages/member/MeetingDetailPage';
 import MemberMeetingsPage from '@/pages/member/MeetingsPage';
 import MemberReportPage from '@/pages/member/MemberReportPage';
 import SurveyPage from '@/pages/member/SurveyPage';
+import SettingsPage from '@/pages/settings/SettingsPage';
 import TeamJoinPage from '@/pages/member/TeamJoinPage';
 
 const router = createBrowserRouter([
@@ -35,7 +36,7 @@ const router = createBrowserRouter([
   { path: '/member/meeting/:meetingId', element: <RequiresTeam><MemberMeetingDetailPage /></RequiresTeam> },
   { path: '/member/meeting/:meetingId/report', element: <RequiresTeam><MemberReportPage /></RequiresTeam> },
   { path: '/member/survey/:meetingId', element: <RequiresTeam><SurveyPage /></RequiresTeam> },
-  { path: '/settings', element: <RequiresTeam><LeaderDashboard /></RequiresTeam> },
+  { path: '/settings', element: <RequiresTeam><SettingsPage /></RequiresTeam> },
   { path: '/invite', element: <RequiresTeam><LeaderDashboard /></RequiresTeam> },
 ]);
 
