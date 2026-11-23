@@ -25,7 +25,7 @@ const achievementStyles: Record<MemberAchievementType, { keyword: string; card: 
   GROWTH: {
     keyword: '성장',
     card: 'border-gray-200 bg-gray-50',
-    text: 'text-violet-700',
+    text: 'text-brand',
   },
   CONTRIBUTION: {
     keyword: '기여',
@@ -41,7 +41,7 @@ const achievementStyles: Record<MemberAchievementType, { keyword: string; card: 
 
 const categoryTextStyles: Record<MemberPromiseCategory, string> = {
   RESOURCE: 'text-blue-700',
-  TEAM_BUILDING: 'text-violet-700',
+  TEAM_BUILDING: 'text-brand',
   RECOGNITION: 'text-amber-700',
   PROCESS: 'text-teal-700',
 };

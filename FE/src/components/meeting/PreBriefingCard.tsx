@@ -188,7 +188,7 @@ export default function PreBriefingCard({ data }: Props) {
     <section className="w-full max-w-[600px] rounded-xl border border-gray-100 bg-white px-6 py-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EEF2FF] text-sm font-semibold text-[#4E62E6]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand">
             {getInitials(data.memberName)}
           </div>
           <div className="min-w-0">

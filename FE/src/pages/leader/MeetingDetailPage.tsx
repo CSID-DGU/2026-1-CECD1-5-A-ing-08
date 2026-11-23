@@ -109,7 +109,7 @@ export default function MeetingDetailPage() {
             </p>
             <button
               onClick={() => navigate('/leader/meetings')}
-              className="rounded-lg bg-[#5F74FA] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#4E62E6]"
+              className="rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-hover"
             >
               1on1 목록으로 이동
             </button>
@@ -125,7 +125,7 @@ export default function MeetingDetailPage() {
         <div className="flex flex-col h-full">
           <MeetingHeader meeting={meeting} onSaved={setInfo} />
           <div className="flex-1 flex flex-col items-center justify-center px-8 gap-4 pb-32">
-            <div className="w-10 h-10 border-4 border-[#5F74FA] border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin" />
             <p className="text-sm text-gray-600">녹음 파일을 업로드 중입니다...</p>
           </div>
         </div>
@@ -144,7 +144,7 @@ export default function MeetingDetailPage() {
             </p>
             <button
               onClick={handleRetry}
-              className="px-5 py-2.5 rounded-lg bg-[#5F74FA] text-sm text-white font-medium hover:bg-[#4E62E6]"
+              className="px-5 py-2.5 rounded-lg bg-brand text-sm text-white font-medium hover:bg-brand-hover"
             >
               다시 시도
             </button>
@@ -225,7 +225,7 @@ export default function MeetingDetailPage() {
                   </div>
                 </div>
               )}
-              <div className={`text-center text-sm ${surveyDone ? 'text-[#5F74FA]' : 'text-gray-400'}`}>
+              <div className={`text-center text-sm ${surveyDone ? 'text-brand' : 'text-gray-400'}`}>
                 {surveyDone ? (
                   <>
                     <p className="font-medium">멤버의 사전 서베이가 완료되었습니다.</p>
@@ -243,14 +243,14 @@ export default function MeetingDetailPage() {
                 disabled={!surveyDone}
                 className={`px-8 py-3 rounded-full font-medium transition-all ${
                   surveyDone
-                    ? 'text-white bg-[#5F74FA] hover:bg-[#4E62E6] shadow-lg shadow-[#5F74FA]/30'
+                    ? 'text-white bg-brand hover:bg-brand-hover shadow-lg shadow-brand/30'
                     : 'text-gray-400 bg-gray-100 cursor-not-allowed'
                 }`}
               >
                 1on1 미팅 시작하기
               </button>
               {surveyDone && (
-                <label className="mt-2 cursor-pointer px-6 py-2 rounded-full border border-dashed border-gray-400 text-sm text-gray-500 hover:border-[#5F74FA] hover:text-[#5F74FA] transition-colors">
+                <label className="mt-2 cursor-pointer px-6 py-2 rounded-full border border-dashed border-gray-400 text-sm text-gray-500 hover:border-brand hover:text-brand transition-colors">
                   파일 선택해서 업로드
                   <input
                     type="file"
@@ -268,7 +268,7 @@ export default function MeetingDetailPage() {
           {localStatus === "recording" && (
             <div className="border-t border-gray-200 px-8 py-6 flex flex-col items-center gap-3">
               <TalkRatioBadge leaderRatio={ratio?.leaderRatio ?? null} calibrationState={recorder.calibrationState} />
-              <span className="text-sm font-medium text-[#5F74FA]">🎙 녹음 중입니다</span>
+              <span className="text-sm font-medium text-brand">🎙 녹음 중입니다</span>
               <span className="text-xs text-gray-400">아래 플로팅 바에서 미팅을 종료할 수 있습니다.</span>
             </div>
           )}
@@ -401,10 +401,10 @@ function RoundBlock({
       <button
         type="button"
         onClick={() => collapsible && setOpen((v) => !v)}
-        className={`flex w-full items-center gap-2 px-2.5 py-2 text-left ${collapsible ? "hover:bg-gray-50" : ""} ${isLatest ? "bg-[#5F74FA]/5" : ""}`}
+        className={`flex w-full items-center gap-2 px-2.5 py-2 text-left ${collapsible ? "hover:bg-gray-50" : ""} ${isLatest ? "bg-brand/5" : ""}`}
       >
         {isLatest && (
-          <span className="rounded-full bg-[#5F74FA] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+          <span className="rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold text-white">
             직전 미팅
           </span>
         )}
@@ -435,8 +435,8 @@ function RoundBlock({
           )}
           {group.promises.length > 0 && (
             <div className={group.plans.length > 0 ? "border-t border-gray-100 pt-2.5" : ""}>
-              <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold text-violet-600">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-500" />
+              <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold text-brand">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand" />
                 미이행 약속
               </p>
               <ul className="flex flex-col gap-1.5">
@@ -476,7 +476,7 @@ function ChecklistRow({
           type="checkbox"
           checked={checked}
           onChange={(e) => onToggle(e.target.checked)}
-          className="mt-0.5 h-4 w-4 flex-shrink-0 accent-[#5F74FA]"
+          className="mt-0.5 h-4 w-4 flex-shrink-0 accent-brand"
         />
         <span className="min-w-0">
           <span className={`block text-sm leading-snug ${checked ? "text-gray-400 line-through" : "text-gray-800"}`}>
@@ -508,7 +508,7 @@ function MeetingNotes({ meetingId }: { meetingId: string }) {
       <textarea
         value={note}
         onChange={(e) => handleChange(e.target.value)}
-        className="w-full h-32 border border-gray-200 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-[#4E62E6]"
+        className="w-full h-32 border border-gray-200 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-brand"
         placeholder="나만 볼 수 있는 메모입니다."
       />
     </div>
@@ -552,7 +552,7 @@ function MeetingHeader({ meeting, onSaved }: { meeting: MeetingDetail; onSaved: 
         />
       )}
       <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
-        <span className="w-6 h-6 rounded-full bg-[#5F74FA] flex items-center justify-center text-white text-xs">
+        <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white text-xs">
           {meeting.leaderName[0]}
         </span>
         <span>{meeting.leaderName} (리더)</span>
@@ -610,7 +610,7 @@ function EditMeetingModal({ meeting, initialTitle, onClose, onSaved }: {
             value={title}
             maxLength={100}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#4E62E6]"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand"
           />
         </label>
         <div className="mb-4">
@@ -627,7 +627,7 @@ function EditMeetingModal({ meeting, initialTitle, onClose, onSaved }: {
             onClick={handleSave}
             disabled={!canSave}
             className={`px-6 py-2.5 rounded-lg text-sm text-white transition-colors ${
-              canSave ? "bg-[#5F74FA] hover:bg-[#4E62E6]" : "bg-gray-300 cursor-not-allowed"
+              canSave ? "bg-brand hover:bg-brand-hover" : "bg-gray-300 cursor-not-allowed"
             }`}
           >
             저장

@@ -35,7 +35,7 @@ export default function RecordingFloatingBar({
         {bars.map((h, i) => (
           <div
             key={i}
-            className="w-[3px] rounded-full bg-[#5F74FA] transition-all duration-75"
+            className="w-[3px] rounded-full bg-brand transition-all duration-75"
             style={{ height: `${h}px` }}
           />
         ))}
@@ -46,7 +46,7 @@ export default function RecordingFloatingBar({
       {isLeader && (
         <button
           onClick={onEndClick}
-          className="ml-2 px-5 py-2 rounded-full text-sm font-medium text-white bg-[#5F74FA] hover:bg-[#4E62E6] transition-colors"
+          className="ml-2 px-5 py-2 rounded-full text-sm font-medium text-white bg-brand hover:bg-brand-hover transition-colors"
         >
           1on1 미팅 종료하기
         </button>

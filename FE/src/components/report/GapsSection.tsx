@@ -140,7 +140,7 @@ export default function GapsSection({ data }: Props) {
             <>
               <GapDonut
                 ratio={alignmentGap.score / 100}
-                fillColor="#5F74FA"
+                fillColor="#1F3A5F"
                 centerLabel={String(alignmentGap.score)}
                 subLabel="/100"
               />

@@ -43,7 +43,7 @@ type Menu = "date" | "ampm" | "hour" | "minute" | null;
 const fieldCls = "border rounded-lg px-3 py-2 text-sm";
 const popoverCls = "absolute left-0 top-full mt-1 z-10 bg-white border border-gray-200 rounded-xl shadow-lg p-2";
 const optionCls = (sel: boolean) =>
-  `rounded-lg px-2 py-1.5 text-sm ${sel ? "bg-[#5F74FA] text-white" : "hover:bg-gray-100"}`;
+  `rounded-lg px-2 py-1.5 text-sm ${sel ? "bg-brand text-white" : "hover:bg-gray-100"}`;
 
 export default function MeetingDateTimePicker({ date, time, onDateChange, onTimeChange, collapsible = false }: MeetingDateTimePickerProps) {
   const [menu, setMenu] = useState<Menu>(null);
@@ -132,7 +132,7 @@ export default function MeetingDateTimePicker({ date, time, onDateChange, onTime
                 setMenu(null);
               }}
               className={`w-9 h-9 mx-auto rounded-full flex items-center justify-center transition-colors
-                ${isSel ? "bg-[#5F74FA] text-white" : "hover:bg-gray-100"}
+                ${isSel ? "bg-brand text-white" : "hover:bg-gray-100"}
                 ${!isSel && isSun ? "text-red-400" : ""}
                 ${!isSel && isSat ? "text-blue-400" : ""}
               `}
@@ -155,7 +155,7 @@ export default function MeetingDateTimePicker({ date, time, onDateChange, onTime
             value={time}
             aria-label="미팅 시간"
             onChange={(e) => onTimeChange(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#4E62E6]"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand"
           >
             {TIME_OPTIONS.map((t) => (
               <option key={t} value={t}>{t}</option>
@@ -183,14 +183,14 @@ export default function MeetingDateTimePicker({ date, time, onDateChange, onTime
           type="button"
           aria-expanded={menu === "date"}
           onClick={() => toggle("date")}
-          className={`w-full text-left ${fieldCls} ${menu === "date" ? "border-[#4E62E6]" : "border-gray-200"}`}
+          className={`w-full text-left ${fieldCls} ${menu === "date" ? "border-brand" : "border-gray-200"}`}
         >
           {selY}년 {selM}월 {selD}일 ({weekday})
         </button>
         {menu === "date" && <div className={popoverCls}>{calendar}</div>}
       </div>
 
-      <div className={`flex items-center gap-0.5 ${fieldCls} ${menu && menu !== "date" ? "border-[#4E62E6]" : "border-gray-200"}`}>
+      <div className={`flex items-center gap-0.5 ${fieldCls} ${menu && menu !== "date" ? "border-brand" : "border-gray-200"}`}>
         <Segment label="오전/오후" value={isPm ? "오후" : "오전"} open={menu === "ampm"} onToggle={() => toggle("ampm")}
           options={[false, true]} isSelected={(pm) => pm === isPm} render={(pm) => (pm ? "오후" : "오전")}
           onPick={(pm) => { setTime(pm, h12, mm); setMenu(null); }} />
@@ -230,7 +230,7 @@ function Segment<T>({ label, value, open, onToggle, options, isSelected, render,
         aria-label={label}
         aria-expanded={open}
         onClick={onToggle}
-        className={`rounded px-1 ${open ? "bg-[#5F74FA]/10 text-[#4E62E6]" : "hover:bg-gray-100"}`}
+        className={`rounded px-1 ${open ? "bg-brand/10 text-brand" : "hover:bg-gray-100"}`}
       >
         {value}
       </button>

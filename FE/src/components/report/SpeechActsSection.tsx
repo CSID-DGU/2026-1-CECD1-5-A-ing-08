@@ -44,7 +44,7 @@ function SpeechActRow({
       >
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-gray-800">{label}</span>
-          <span className="text-lg font-bold text-[#5F74FA]">{item.count}회</span>
+          <span className="text-lg font-bold text-brand">{item.count}회</span>
           <ChangeRateBadge rate={item.changeRate} />
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">

@@ -30,7 +30,7 @@ export default function StartMeetingModal({ isOpen, onClose, onStart }: Props) {
             <span className="text-lg">🎙️</span>
             <span className="font-medium text-sm">녹음 기능</span>
           </div>
-          <div className="bg-[#5F74FA] text-white text-xs font-bold px-3 py-1 rounded-full">
+          <div className="bg-brand text-white text-xs font-bold px-3 py-1 rounded-full">
             ON
           </div>
         </div>
@@ -40,7 +40,7 @@ export default function StartMeetingModal({ isOpen, onClose, onStart }: Props) {
             type="checkbox"
             checked={consent}
             onChange={(e) => setConsent(e.target.checked)}
-            className="accent-[#5F74FA] w-4 h-4"
+            className="accent-brand w-4 h-4"
           />
           <span className="text-sm text-gray-600">상대방의 녹음 동의를 구했어요.</span>
         </label>
@@ -59,7 +59,7 @@ export default function StartMeetingModal({ isOpen, onClose, onStart }: Props) {
             }}
             disabled={!consent}
             className={`px-6 py-2.5 rounded-lg text-sm text-white transition-colors ${
-              consent ? "bg-[#5F74FA] hover:bg-[#4E62E6]" : "bg-gray-300 cursor-not-allowed"
+              consent ? "bg-brand hover:bg-brand-hover" : "bg-gray-300 cursor-not-allowed"
             }`}
           >
             미팅 시작

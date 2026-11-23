@@ -21,7 +21,7 @@ const statusMap: Record<string, { label: string; badge: string }> = {
   CREATED:   { label: "대기 중",  badge: "bg-yellow-100 text-yellow-700" },
   PENDING:   { label: "대기 중",  badge: "bg-yellow-100 text-yellow-700" },
   RECORDING: { label: "녹음 중",  badge: "bg-blue-100 text-blue-700" },
-  ANALYZING: { label: "분석 중",  badge: "bg-purple-100 text-purple-700" },
+  ANALYZING: { label: "분석 중",  badge: "bg-brand-soft text-brand" },
   COMPLETED: { label: "완료",     badge: "bg-emerald-100 text-emerald-700" },
 };
 
@@ -144,7 +144,7 @@ export default function MeetingsPage({
           </div>
           <button
             onClick={() => setCreateModalOpen(true)}
-            className={`${showCreateButton ? 'inline-flex' : 'hidden'} items-center justify-center rounded-lg bg-[#5F74FA] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#4E62E6]`}
+            className={`${showCreateButton ? 'inline-flex' : 'hidden'} items-center justify-center rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-hover`}
           >
             새 1on1 만들기
           </button>

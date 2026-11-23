@@ -49,7 +49,7 @@ export default function MemberMeetingDetailPage() {
             </p>
             <button
               onClick={() => navigate('/member/dashboard')}
-              className="rounded-lg bg-[#5F74FA] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#4E62E6]"
+              className="rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-hover"
             >
               대시보드로 이동
             </button>
@@ -112,7 +112,7 @@ function MeetingHeader({ meeting }: { meeting: MeetingDetail }) {
         {meeting.title && <span className="text-sm text-gray-400">{dateStr}</span>}
       </div>
       <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
-        <span className="w-6 h-6 rounded-full bg-[#5F74FA] flex items-center justify-center text-white text-xs">
+        <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white text-xs">
           {meeting.leaderName[0]}
         </span>
         <span>{meeting.leaderName} (리더)</span>

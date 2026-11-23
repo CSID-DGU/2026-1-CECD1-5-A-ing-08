@@ -4,19 +4,37 @@
 
 :root {
   --sidebar-width: 220px;
-  --color-bg: #F7F8FA;
+
+  /* ReadB 색 체계: 메인 1색(잉크 네이비) + 중립 + 상태 2색.
+     tailwind.config.ts 의 brand / ink / line / canvas / risk / caution 과 같은 값. */
+  --rb-brand: #1F3A5F;
+  --rb-brand-hover: #162C49;
+  --rb-brand-soft: #E8EDF3;
+  --rb-ink: #1A1D29;
+  --rb-ink-secondary: #6B7080;
+  --rb-ink-muted: #9A9EAB;
+  --rb-line: #E6E8EE;
+  --rb-canvas: #F7F8FA;
+  --rb-risk: #D64545;
+  --rb-risk-soft: #FBECEC;
+  --rb-caution: #C98A1B;
+  --rb-caution-soft: #FBF3E4;
+  --rb-caution-strong: #8A5D0F;
+
+  /* 이전 변수: 기존 코드 호환용. 새 코드는 --rb-* 를 사용. */
+  --color-bg: var(--rb-canvas);
   --color-surface: #FFFFFF;
-  --color-border: #E5E7EB;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6B7280;
-  --color-brand: #111827;
+  --color-border: var(--rb-line);
+  --color-text-primary: var(--rb-ink);
+  --color-text-secondary: var(--rb-ink-secondary);
+  --color-brand: var(--rb-brand);
   --color-accent-blue: #3B82F6;
   --color-accent-teal: #14B8A6;
   --color-accent-orange: #F97316;
-  --color-accent-red: #EF4444;
-  --color-accent-yellow: #EAB308;
+  --color-accent-red: var(--rb-risk);
+  --color-accent-yellow: var(--rb-caution);
   --color-accent-green: #22C55E;
-  --color-risk-bg: rgba(239, 68, 68, 0.08);
+  --color-risk-bg: var(--rb-risk-soft);
 }
 
 * {

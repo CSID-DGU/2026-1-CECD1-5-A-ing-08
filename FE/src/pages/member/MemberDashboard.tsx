@@ -119,11 +119,11 @@ function PromisesByRoundSection({ memberId }: { memberId: string | number | unde
                           type="checkbox"
                           checked={p.status === 'DONE'}
                           onChange={(e) => togglePromise(p.promiseId, e.target.checked)}
-                          className="mt-0.5 h-4 w-4 flex-shrink-0 accent-[#5F74FA]"
+                          className="mt-0.5 h-4 w-4 flex-shrink-0 accent-brand"
                         />
                         <span className="min-w-0">
                           <span className="mb-0.5 block">
-                            <span className={`text-xs font-medium ${p.ownerType === 'LEADER' ? 'text-violet-500' : 'text-teal-500'}`}>
+                            <span className={`text-xs font-medium ${p.ownerType === 'LEADER' ? 'text-brand' : 'text-teal-500'}`}>
                               {p.ownerType === 'LEADER' ? '리더' : '멤버'}
                             </span>
                           </span>

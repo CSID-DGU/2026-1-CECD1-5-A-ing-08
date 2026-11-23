@@ -302,7 +302,7 @@ export default function LeaderGrowthPage() {
                     <TrendRows
                       points={data.teamSafetyTrend}
                       unit="점"
-                      colorOf={() => 'bg-indigo-400'}
+                      colorOf={() => 'bg-brand/60'}
                     />
                   ) : (
                     <TrendEmpty message="아직 분석 완료된 미팅이 없습니다." />

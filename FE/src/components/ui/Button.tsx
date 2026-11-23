@@ -9,7 +9,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = 'primary', size = 'md', className = '', children, ...props }, ref) => {
     const base = 'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none disabled:opacity-50';
     const variants = {
-      primary: 'bg-gray-900 text-white hover:bg-gray-700',
+      primary: 'bg-brand text-white hover:bg-brand-hover',
       secondary: 'bg-gray-100 text-gray-800 hover:bg-gray-200',
       ghost: 'text-gray-600 hover:bg-gray-100',
     };

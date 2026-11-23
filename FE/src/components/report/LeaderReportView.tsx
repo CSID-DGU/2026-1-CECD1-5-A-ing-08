@@ -25,7 +25,7 @@ export default function LeaderReportView({ meetingId }: Props) {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16">
-        <div className="w-8 h-8 border-4 border-[#5F74FA] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin" />
         <p className="text-sm text-gray-400">리포트를 불러오는 중...</p>
       </div>
     );
@@ -37,7 +37,7 @@ export default function LeaderReportView({ meetingId }: Props) {
         <p className="text-sm text-red-500">{error ?? '리포트를 불러오지 못했습니다.'}</p>
         <button
           onClick={retry}
-          className="px-5 py-2.5 rounded-lg bg-[#5F74FA] text-sm text-white font-medium hover:bg-[#4E62E6]"
+          className="px-5 py-2.5 rounded-lg bg-brand text-sm text-white font-medium hover:bg-brand-hover"
         >
           다시 시도
         </button>
@@ -57,7 +57,7 @@ export default function LeaderReportView({ meetingId }: Props) {
               onClick={() => setActiveTab(tab)}
               className={`pb-3 pt-4 mr-6 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab
-                  ? 'border-[#5F74FA] text-[#5F74FA]'
+                  ? 'border-brand text-brand'
                   : 'border-transparent text-gray-400 hover:text-gray-600'
               }`}
             >

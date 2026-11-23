@@ -99,7 +99,7 @@ export default function CreateMeetingModal({ isOpen, onClose, onCreated }: Props
         <div className="mb-6">
           <p className="font-semibold mb-2">미팅 제목 <span className="text-sm font-normal text-gray-400">(선택)</span></p>
           <input
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#4E62E6]"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand"
             placeholder="비워두면 'YYYY년 MM월 DD일 1on1 미팅'으로 저장돼요."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -111,7 +111,7 @@ export default function CreateMeetingModal({ isOpen, onClose, onCreated }: Props
           <div>
             <p className="font-semibold mb-3">미팅 상대는 누구인가요?</p>
             <input
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 mb-3 text-sm focus:outline-none focus:border-[#4E62E6]"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 mb-3 text-sm focus:outline-none focus:border-brand"
               placeholder="이름이나 이메일 주소를 입력해주세요."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -127,9 +127,9 @@ export default function CreateMeetingModal({ isOpen, onClose, onCreated }: Props
                     name="member"
                     checked={selected?.id === m.id}
                     onChange={() => setSelected(m)}
-                    className="accent-[#5F74FA]"
+                    className="accent-brand"
                   />
-                  <div className="w-8 h-8 rounded-full bg-[#5F74FA] flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white text-xs font-bold">
                     {m.name[0]}
                   </div>
                   <div>
@@ -167,7 +167,7 @@ export default function CreateMeetingModal({ isOpen, onClose, onCreated }: Props
             onClick={handleCreate}
             disabled={!canCreate}
             className={`px-6 py-2.5 rounded-lg text-sm text-white transition-colors ${
-              canCreate ? "bg-[#5F74FA] hover:bg-[#4E62E6]" : "bg-gray-300 cursor-not-allowed"
+              canCreate ? "bg-brand hover:bg-brand-hover" : "bg-gray-300 cursor-not-allowed"
             }`}
           >
             미팅 만들기

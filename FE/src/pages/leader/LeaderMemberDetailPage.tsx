@@ -108,7 +108,7 @@ function PromisesSection({ promises }: { promises: MemberInsightPromise[] }) {
               <li key={p.promiseId} className="flex items-start justify-between gap-3 rounded-lg border border-gray-100 px-3 py-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className={`text-xs font-medium ${p.ownerType === 'LEADER' ? 'text-violet-500' : 'text-teal-500'}`}>
+                    <span className={`text-xs font-medium ${p.ownerType === 'LEADER' ? 'text-brand' : 'text-teal-500'}`}>
                       {p.ownerType === 'LEADER' ? '리더' : '멤버'}
                     </span>
                   </div>
