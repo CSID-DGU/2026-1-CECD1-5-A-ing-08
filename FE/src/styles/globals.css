@@ -4,6 +4,8 @@
 
 :root {
   --sidebar-width: 220px;
+  /* tailwind rounded-lg/md/sm 기준값. 없으면 세 클래스가 모두 0(각진 모서리)이 됨 */
+  --radius: 5px;
 
   /* ReadB 색 체계: 메인 1색(잉크 네이비) + 중립 + 상태 2색.
      tailwind.config.ts 의 brand / ink / line / canvas / risk / caution 과 같은 값. */
