@@ -264,8 +264,14 @@ export default function MeetingDetailPage() {
             </div>
           )}
           {localStatus === "recording" && (
-            <div className="border-t border-gray-200 px-8 py-6 flex flex-col items-center gap-3">
-              <TalkRatioBadge ratio={ratio} calibrationState={recorder.calibrationState} error={recorder.captureError} connected={ratioConnected} />
+            <div className="px-8 py-6 flex flex-col items-center gap-3">
+              <TalkRatioBadge
+                ratio={ratio}
+                calibrationState={recorder.calibrationState}
+                error={recorder.captureError}
+                connected={ratioConnected}
+                onStartCalibration={recorder.startCalibration}
+              />
               <span className="text-sm font-medium text-[#5F74FA]">🎙 녹음 중입니다</span>
               <span className="text-xs text-gray-400">아래 플로팅 바에서 미팅을 종료할 수 있습니다.</span>
             </div>

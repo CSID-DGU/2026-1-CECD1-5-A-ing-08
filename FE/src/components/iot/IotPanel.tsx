@@ -49,10 +49,6 @@ export default function IotPanel({ ratio, isRecording }: Props) {
       {recentReady && ratio!.recentLeaderRatio >= 70 && isRecording && (
         <p className="text-xs text-red-500">최근 2분간 리더 발화 비율이 70% 이상입니다.</p>
       )}
-      {ratio?.hasData && ratio.unclassifiedRatio > 0 && (
-        <p className="text-xs text-gray-400">짧거나 불확실한 발화 {ratio.unclassifiedRatio}%는 비율에서 제외했습니다.</p>
-      )}
-
       <button
         onClick={connected ? disconnect : connect}
         className="text-xs text-gray-400 hover:text-gray-600 underline"
