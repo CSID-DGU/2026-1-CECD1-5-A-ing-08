@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   CartesianGrid,
   Customized,
@@ -155,18 +155,21 @@ interface GapDotProps {
   payload?: RadarDataPoint;
   threshold: number;
   gapThreshold: number;
-  onMemberClick?: (memberId: number) => void;
+  onDotClick: DotClickHandler;
 }
 
 /** 위험 = 채운 빨간 점, 조용한 위험 = 빈 주황 고리, 그 외 = 작은 회색 점(이름은 툴팁으로). */
-function GapDot({ cx = 0, cy = 0, payload, threshold, gapThreshold, onMemberClick }: GapDotProps) {
+function GapDot({ cx = 0, cy = 0, payload, threshold, gapThreshold, onDotClick }: GapDotProps) {
   if (!payload) return null;
   const status = getGapStatus(payload, threshold, gapThreshold);
 
   return (
     <g
-      style={{ cursor: onMemberClick ? 'pointer' : 'default' }}
-      onClick={() => onMemberClick?.(payload.memberId)}
+      style={{ cursor: 'pointer' }}
+      onClick={(e) => {
+        e.stopPropagation(); // 바깥 클릭(고정 해제)으로 전파되지 않게
+        onDotClick(payload, cx, cy);
+      }}
     >
       {status === 'EXPLICIT_RISK' && <circle cx={cx} cy={cy} r={8} fill={GAP_COLORS.risk} />}
       {status === 'HIDDEN_GAP' && (
@@ -289,17 +292,20 @@ interface CustomDotProps {
   cy?: number;
   payload?: RadarDataPoint;
   threshold?: number;
-  onMemberClick?: (memberId: number) => void;
+  onDotClick: DotClickHandler;
 }
 
-function CustomDot({ cx = 0, cy = 0, payload, threshold, onMemberClick }: CustomDotProps) {
+function CustomDot({ cx = 0, cy = 0, payload, threshold, onDotClick }: CustomDotProps) {
   if (!payload) return null;
   const style = QUADRANT_STYLE[getQuadrant(payload, threshold)];
 
   return (
     <g
-      style={{ cursor: onMemberClick ? 'pointer' : 'default' }}
-      onClick={() => onMemberClick?.(payload.memberId)}
+      style={{ cursor: 'pointer' }}
+      onClick={(e) => {
+        e.stopPropagation(); // 바깥 클릭(고정 해제)으로 전파되지 않게
+        onDotClick(payload, cx, cy);
+      }}
     >
       <circle cx={cx} cy={cy} r={8} fill={style.fill} stroke={style.stroke} strokeWidth={1.5} />
       <text
@@ -316,6 +322,16 @@ function CustomDot({ cx = 0, cy = 0, payload, threshold, onMemberClick }: Custom
   );
 }
 
+type DotClickHandler = (point: RadarDataPoint, cx: number, cy: number) => void;
+
+interface PinnedTooltip {
+  point: RadarDataPoint;
+  /** 클릭 순간 호버 툴팁의 transform — 같은 자리에 고정하기 위함 */
+  transform: string;
+  view: RadarViewMode;
+}
+
+/** 멤버 점을 클릭하면 호버 툴팁을 그 자리에 고정. 같은 점 재클릭·빈 곳 클릭 시 해제. */
 export default function ScatterRadar({
   data,
   riskThreshold = QUADRANT_THRESHOLD / 100,
@@ -323,13 +339,73 @@ export default function ScatterRadar({
   onMemberClick,
 }: ScatterRadarProps) {
   const threshold = riskThreshold * 100;
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [pinned, setPinned] = useState<PinnedTooltip | null>(null);
+  // 보기 전환 시 좌표가 달라지므로 같은 보기에서 고정한 것만 유효
+  const activePin = pinned?.view === view ? pinned : null;
 
-  if (view === 'gap') {
-    return (
-      <GapRadar data={data} threshold={threshold} gapThreshold={GAP_THRESHOLD} onMemberClick={onMemberClick} />
-    );
-  }
+  const handleDotClick = useCallback<DotClickHandler>(
+    (point, cx, cy) => {
+      // Recharts 툴팁 래퍼는 차트 좌상단 기준 transform 으로 배치되므로 그대로 복사하면 같은 위치.
+      // 호버 툴팁이 없을 때(터치 등)는 점 오른쪽 아래에 둔다.
+      const hover = wrapperRef.current?.querySelector<HTMLElement>('.recharts-tooltip-wrapper');
+      const transform =
+        hover && hover.style.visibility !== 'hidden' && hover.style.transform
+          ? hover.style.transform
+          : `translate(${cx + 10}px, ${cy + 10}px)`;
+      setPinned((prev) =>
+        prev?.view === view && prev.point.memberId === point.memberId ? null : { point, transform, view },
+      );
+      onMemberClick?.(point.memberId);
+    },
+    [view, onMemberClick],
+  );
 
+  return (
+    <div ref={wrapperRef} className="relative w-full h-full" onClick={() => setPinned(null)}>
+      {view === 'gap' ? (
+        <GapRadar
+          data={data}
+          threshold={threshold}
+          gapThreshold={GAP_THRESHOLD}
+          hoverDisabled={!!activePin}
+          onDotClick={handleDotClick}
+        />
+      ) : (
+        <QuadrantRadar
+          data={data}
+          threshold={threshold}
+          hoverDisabled={!!activePin}
+          onDotClick={handleDotClick}
+        />
+      )}
+      {activePin && (
+        <div
+          className="absolute left-0 top-0 z-10"
+          onClick={(e) => e.stopPropagation()}
+          style={{ transform: activePin.transform }}
+        >
+          <CustomTooltip
+            active
+            payload={[{ payload: activePin.point }]}
+            threshold={threshold}
+            view={view}
+            gapThreshold={GAP_THRESHOLD}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface QuadrantRadarProps {
+  data: RadarDataPoint[];
+  threshold: number;
+  hoverDisabled: boolean;
+  onDotClick: DotClickHandler;
+}
+
+function QuadrantRadar({ data, threshold, hoverDisabled, onDotClick }: QuadrantRadarProps) {
   return (
     <div className="w-full h-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -376,16 +452,15 @@ export default function ScatterRadar({
           <ReferenceLine x={threshold} stroke="#D1D5DB" strokeDasharray="4 4" strokeWidth={1} />
           <ReferenceLine y={threshold} stroke="#D1D5DB" strokeDasharray="4 4" strokeWidth={1} />
 
-          <Tooltip content={<CustomTooltip threshold={threshold} />} />
+          <Tooltip
+            active={hoverDisabled ? false : undefined}
+            content={<CustomTooltip threshold={threshold} />}
+          />
 
           <Scatter
             data={data.map((point) => ({ ...point, plotX: getPlotX(point, threshold) }))}
             shape={(props: object) => (
-              <CustomDot
-                {...(props as CustomDotProps)}
-                threshold={threshold}
-                onMemberClick={onMemberClick}
-              />
+              <CustomDot {...(props as CustomDotProps)} threshold={threshold} onDotClick={onDotClick} />
             )}
           />
         </ScatterChart>
@@ -398,10 +473,11 @@ interface GapRadarProps {
   data: RadarDataPoint[];
   threshold: number;
   gapThreshold: number;
-  onMemberClick?: (memberId: number) => void;
+  hoverDisabled: boolean;
+  onDotClick: DotClickHandler;
 }
 
-function GapRadar({ data, threshold, gapThreshold, onMemberClick }: GapRadarProps) {
+function GapRadar({ data, threshold, gapThreshold, hoverDisabled, onDotClick }: GapRadarProps) {
   const axisTick = { fontSize: 11, fill: GAP_COLORS.muted };
   // 매 렌더마다 새 컴포넌트 타입이 생기지 않도록 고정
   const renderGapZone = useCallback(
@@ -464,6 +540,7 @@ function GapRadar({ data, threshold, gapThreshold, onMemberClick }: GapRadarProp
 
           <Tooltip
             cursor={false}
+            active={hoverDisabled ? false : undefined}
             content={<CustomTooltip threshold={threshold} view="gap" gapThreshold={gapThreshold} />}
           />
 
@@ -475,7 +552,7 @@ function GapRadar({ data, threshold, gapThreshold, onMemberClick }: GapRadarProp
                 {...(props as GapDotProps)}
                 threshold={threshold}
                 gapThreshold={gapThreshold}
-                onMemberClick={onMemberClick}
+                onDotClick={onDotClick}
               />
             )}
           />
