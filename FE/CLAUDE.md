@@ -19,23 +19,23 @@ Environment variable required: `VITE_API_BASE_URL` (defaults to `http://localhos
 
 ## Architecture
 
-### Two-team Ownership Model
+### Working Model
 
-**FE1** owns `pages/`, `features/`, `api/` functions, and routing. Pages consume components via props only — no component API calls.
+The team develops full-stack with no BE/FE or FE1/FE2 role split — `pages/`, `features/`, `components/`, `api/`, and routing are not divided by role.
 
-**FE2** owns `components/`, `stores/` initial setup, `styles/`. Components are pure renderers: they export a Props interface and receive all data from outside.
+Ownership is by the initials in the branch name (`feat/<initials>/...`): never modify another person's branch or the files they are working on in it. If a change there is needed, tell that teammate first (Slack/Discord).
 
-Boundary rule: FE1 never touches `components/`; FE2 never touches `pages/`.
+Structural rule (not ownership): pages and `features/` hooks fetch data; components in `components/` are pure renderers that export a Props interface and receive all data from outside — no API calls inside components.
 
 ### State Management
 
 Two Zustand stores:
-- `stores/authStore.ts` — `user`, `token`, `setAuth`, `clearAuth`. Token is also mirrored to `localStorage` and read directly by `api/client.ts` on every request.
+- `stores/authStore.ts` — `user`, `token`, `setAuth`, `setToken`, `clearAuth`. User and tokens are persisted via `api/authStorage.ts` in `sessionStorage` (closing the tab/window logs out). Never store auth data in `localStorage`.
 - `stores/meetingStore.ts` — client-side meeting list, `createMeeting`, `updateMeetingStatus`, `setRecordingDuration`, modal open state. Meetings are created in-memory (no persistence).
 
 ### API Client
 
-`api/client.ts` is an Axios instance that reads `localStorage.getItem('token')` directly (not from Zustand) for Authorization headers. Base URL from `VITE_API_BASE_URL`.
+`api/client.ts` is an Axios instance that reads the access token from `authStorage` for Authorization headers. On a 401 it refreshes the access token once via `/api/v1/auth/refresh` (concurrent 401s share one refresh) and retries; if refresh fails it clears auth and redirects to `/login`. Base URL from `VITE_API_BASE_URL`.
 
 ### Meeting Recording Flow
 
@@ -70,8 +70,12 @@ Meeting status progression: `pending → recording → analyzing → completed`.
 /member/meeting/:id       MeetingFeedbackPage
 /member/survey/:id        SurveyPage
 /meeting                  MeetingDetailPage (no :id)
-/leader/reports, /leader/9box, /leader/overview, /settings, /invite → all stub to LeaderDashboard
+/settings                 SettingsPage (개인 설정: 이름·직책·한 줄 소개, 비밀번호 변경)
+/leader/reports, /leader/9box, /leader/overview, /invite → all stub to LeaderDashboard
+*                         NotFoundPage (unknown paths)
 ```
+
+All routes are children of one pathless root route whose `errorElement` is `RouteErrorPage`: any error thrown while rendering a page shows a "문제가 생겼어요" screen (reload / home) instead of a blank page. Error screens live in `pages/error/` and render without `PageLayout`.
 
 ## API URL Convention
 
@@ -83,7 +87,7 @@ Meeting status progression: `pending → recording → analyzing → completed`.
 
 ## Shared File Rules
 
-- `types/` and `constants/` — additions only; renames/deletes require team notification.
-- `api/types.ts` — BE response shapes go here; `ApiResponse<T>` is the standard wrapper.
-- `App.tsx`, `api/client.ts`, `stores/authStore.ts` — notify other team before modifying; merge that PR first, then rebase.
-- Branch naming: `feat/fe1-<feature>` or `feat/fe2-<feature>`.
+- `types/` and `constants/` — additions are free; renames/deletes must update every usage and be called out in the PR.
+- `api/types.ts` — BE response shapes go here; `ApiResponse<T>` is the standard wrapper. When an API changes, update `api/`, its types, and `Docs/API_SPEC.md` in the same PR.
+- `App.tsx`, `api/client.ts`, `stores/authStore.ts` — many screens depend on these; call out changes in the PR and merge it first.
+- Branch naming: `feat/<initials>/<topic>` or `fix/<initials>/<topic>` (e.g. `feat/js/team-health-trend-chart`).

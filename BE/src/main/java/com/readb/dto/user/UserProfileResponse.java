@@ -9,6 +9,7 @@ public record UserProfileResponse(
         String name,
         String role,
         String jobTitle,
+        String bio,
         Long teamId,
         String teamName,
         String inviteCode
@@ -21,6 +22,7 @@ public record UserProfileResponse(
                 user.getName(),
                 user.getRole().name(),
                 user.getJobTitle(),
+                user.getBio(),
                 user.getTeamId(),
                 team != null ? team.getName() : null,
                 (isLeader && team != null) ? team.getInviteCode() : null

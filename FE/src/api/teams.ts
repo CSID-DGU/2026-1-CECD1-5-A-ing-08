@@ -60,3 +60,16 @@ export async function getTeamMembers(teamId: string): Promise<TeamMember[]> {
     role: m.role === 'LEADER' ? 'leader' : 'member',
   }));
 }
+
+export async function renameTeam(teamId: string, name: string): Promise<JoinTeamResult> {
+  const res = await apiClient.patch<ApiResponse<JoinTeamApiResponse>>(`/api/v1/teams/${teamId}`, { name });
+  const d = res.data.data;
+  return { teamId: String(d.teamId), teamName: d.teamName };
+}
+
+export async function regenerateInviteCode(teamId: string): Promise<string> {
+  const res = await apiClient.post<ApiResponse<{ teamId: number; inviteCode: string }>>(
+    `/api/v1/teams/${teamId}/invite-code`,
+  );
+  return res.data.data.inviteCode;
+}

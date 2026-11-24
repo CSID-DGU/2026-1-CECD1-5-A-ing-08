@@ -4,6 +4,9 @@ import { useMeetingStore } from '@/stores/meetingStore';
 import { useMe } from '@/features/auth/useMe';
 import { useLogout } from '@/features/auth/useLogout';
 import { useTeamMembers } from '@/features/team/useTeamMembers';
+import { useRenameTeam } from '@/features/team/useRenameTeam';
+import { useRegenerateInviteCode } from '@/features/team/useRegenerateInviteCode';
+import UserAvatar from '@/features/user/UserAvatar';
 
 interface NavItem {
   label: string;
@@ -82,11 +85,20 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const { logout } = useLogout();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [teamMenuOpen, setTeamMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<'members' | 'inviteCode' | null>(null);
+  const [activeSection, setActiveSection] = useState<'members' | 'inviteCode' | 'rename' | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const teamMenuRef = useRef<HTMLDivElement>(null);
   const { members, isLoading: membersLoading, fetch: fetchMembers } = useTeamMembers(user?.teamId ?? '');
+  const { rename, isSaving: renaming, error: renameError, resetError: resetRenameError } = useRenameTeam();
+  const [teamNameDraft, setTeamNameDraft] = useState('');
+  const {
+    regenerate,
+    isRegenerating,
+    error: regenerateError,
+    resetError: resetRegenerateError,
+  } = useRegenerateInviteCode();
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
 
   useEffect(() => {
     if (!profileMenuOpen) return;
@@ -120,13 +132,36 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     }
   }, [isCollapsed]);
 
-  const handleSectionToggle = (section: 'members' | 'inviteCode') => {
+  const handleSectionToggle = (section: 'members' | 'inviteCode' | 'rename') => {
     if (activeSection === section) {
       setActiveSection(null);
       return;
     }
     setActiveSection(section);
     if (section === 'members') fetchMembers();
+    if (section === 'inviteCode') {
+      setConfirmRegenerate(false);
+      resetRegenerateError();
+    }
+    if (section === 'rename') {
+      setTeamNameDraft(user?.teamName ?? '');
+      resetRenameError();
+    }
+  };
+
+  const trimmedTeamName = teamNameDraft.trim();
+  const canSaveTeamName =
+    trimmedTeamName.length >= 2 && trimmedTeamName.length <= 30 && trimmedTeamName !== user?.teamName;
+
+  const handleRenameTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.teamId || !canSaveTeamName) return;
+    if (await rename(user.teamId, trimmedTeamName)) setActiveSection(null);
+  };
+
+  const handleRegenerateInviteCode = async () => {
+    if (!user?.teamId) return;
+    if (await regenerate(user.teamId)) setConfirmRegenerate(false);
   };
 
   const handleCopyInviteCode = () => {
@@ -261,9 +296,7 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                   <ul className="space-y-2 py-1">
                     {members.map((m) => (
                       <li key={m.id} className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-[10px] font-semibold">{m.name[0]}</span>
-                        </div>
+                        <UserAvatar userId={m.id} name={m.name} className="w-5 h-5 bg-emerald-500 text-[10px]" />
                         <div className="min-w-0">
                           <p className="text-xs font-medium text-gray-800 truncate">{m.name}</p>
                           {m.jobTitle && (
@@ -306,7 +339,88 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                     {codeCopied && (
                       <p className="mt-1.5 text-center text-xs text-green-600">클립보드에 복사됐습니다.</p>
                     )}
+                    {confirmRegenerate ? (
+                      <div className="mt-2.5 rounded border border-amber-200 bg-amber-50 px-2.5 py-2">
+                        <p className="text-[11px] leading-relaxed text-amber-800">
+                          지금 코드는 더 이상 쓸 수 없게 돼요. 이미 들어온 멤버는 그대로예요.
+                        </p>
+                        <div className="mt-1.5 flex justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setConfirmRegenerate(false)}
+                            className="rounded px-2 py-0.5 text-xs text-gray-500 hover:bg-white"
+                          >
+                            취소
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRegenerateInviteCode}
+                            disabled={isRegenerating}
+                            className="rounded bg-brand px-2 py-0.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-50"
+                          >
+                            {isRegenerating ? '만드는 중...' : '새로 만들기'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { setConfirmRegenerate(true); resetRegenerateError(); }}
+                        className="mt-2 w-full text-center text-xs text-gray-500 underline-offset-2 hover:text-gray-800 hover:underline"
+                      >
+                        새 코드 만들기
+                      </button>
+                    )}
+                    {regenerateError && (
+                      <p className="mt-1.5 text-center text-xs text-red-500">{regenerateError}</p>
+                    )}
                   </div>
+                )}
+
+                {/* 팀 이름 변경 (리더만) */}
+                <button
+                  onClick={() => handleSectionToggle('rename')}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                >
+                  <span>팀 이름 변경</span>
+                  <svg
+                    width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2"
+                    className={`transition-transform duration-150 ${activeSection === 'rename' ? 'rotate-90' : ''}`}
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+
+                {activeSection === 'rename' && (
+                  <form onSubmit={handleRenameTeam} className="px-4 py-3 border-t border-gray-100">
+                    <input
+                      value={teamNameDraft}
+                      onChange={(e) => { setTeamNameDraft(e.target.value); resetRenameError(); }}
+                      maxLength={30}
+                      autoFocus
+                      aria-label="새 팀 이름"
+                      placeholder="팀 이름 (2~30자)"
+                      className="w-full rounded border border-gray-200 px-2.5 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                    />
+                    {renameError && <p className="mt-1.5 text-xs text-red-500">{renameError}</p>}
+                    <div className="mt-2 flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setActiveSection(null)}
+                        className="rounded px-2.5 py-1 text-xs text-gray-500 hover:bg-gray-100"
+                      >
+                        취소
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!canSaveTeamName || renaming}
+                        className="rounded bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-50"
+                      >
+                        {renaming ? '저장 중...' : '저장'}
+                      </button>
+                    </div>
+                  </form>
                 )}
               </>
             )}
@@ -358,7 +472,9 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           <NavLink
             key={item.path}
             to={item.path}
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm mb-0.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+            className={({ isActive }) => `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm mb-0.5 transition-colors ${
+              isActive ? 'bg-gray-200 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            } ${isCollapsed ? 'justify-center' : ''}`}
           >
             <span className="text-gray-500 flex-shrink-0">{item.icon}</span>
             {!isCollapsed && item.label}
@@ -385,11 +501,7 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             onClick={() => setProfileMenuOpen((prev) => !prev)}
             disabled={!user}
           >
-            <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-semibold">
-                {user?.name?.[0] ?? '?'}
-              </span>
-            </div>
+            <UserAvatar userId={user?.id} name={user?.name ?? '?'} className="w-7 h-7 bg-emerald-500 text-xs" />
             {!isCollapsed && (
               <div className="min-w-0 text-left">
                 <p className="text-sm font-medium text-gray-800 truncate">

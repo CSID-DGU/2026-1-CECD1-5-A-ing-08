@@ -2,6 +2,7 @@ package com.readb.config;
 
 import com.readb.common.util.JwtUtil;
 import com.readb.security.JwtAuthFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,6 +38,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/talk-ratio/active").permitAll()
                 .anyRequest().authenticated()
             )
+            // 토큰이 없거나 만료되면 403 대신 401 + 공통 응답 형식으로 내려 FE가 토큰 갱신을 시도할 수 있게 한다.
+            .exceptionHandling(e -> e.authenticationEntryPoint((request, response, ex) -> {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write(
+                        "{\"success\":false,\"code\":\"UNAUTHORIZED\",\"message\":\"인증이 필요합니다.\"}");
+            }))
             .addFilterBefore(new JwtAuthFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

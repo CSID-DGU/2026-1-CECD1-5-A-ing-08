@@ -30,4 +30,12 @@ public class Team {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    public void rename(String name) {
+        this.name = name;
+    }
+
+    public void changeInviteCode(String inviteCode) {
+        this.inviteCode = inviteCode;
+    }
 }

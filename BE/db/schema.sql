@@ -14,6 +14,7 @@ CREATE TABLE public.users (
     name            VARCHAR(255) NOT NULL,
     role            VARCHAR(255) NOT NULL,
     job_title       VARCHAR(100),
+    bio             VARCHAR(100),
     team_id         BIGINT,
     created_at      TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_users_email UNIQUE (email),
@@ -196,6 +197,14 @@ CREATE TABLE public.meeting_post_coachings (
     CONSTRAINT uq_meeting_post_coachings_meeting UNIQUE (meeting_id)
 );
 
+CREATE TABLE public.user_profile_images (
+    user_id         BIGINT PRIMARY KEY,
+    content_type    VARCHAR(20) NOT NULL,
+    data            BYTEA NOT NULL,
+    updated_at      TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_profile_images_user FOREIGN KEY (user_id) REFERENCES public.users (id) ON DELETE CASCADE
+);
+
 -- The Spring Boot application uses a direct PostgreSQL connection. Keep the
 -- tables closed to anon/authenticated Data API roles if that API is enabled
 -- later; no client-facing RLS policies are needed for the current design.
@@ -212,5 +221,6 @@ ALTER TABLE public.team_coaching_cache ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.team_blocker_cache ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.meeting_pre_briefings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.meeting_post_coachings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_profile_images ENABLE ROW LEVEL SECURITY;
 
 COMMIT;

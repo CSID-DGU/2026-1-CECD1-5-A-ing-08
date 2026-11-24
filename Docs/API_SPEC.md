@@ -141,7 +141,7 @@ POST /api/v1/auth/login
 | 토큰 | 만료 |
 |------|------|
 | accessToken | 1시간 |
-| refreshToken | 14일 |
+| refreshToken | 12시간 (로그인 시점 기준, 갱신 시 연장되지 않음) |
 
 **에러**
 | 코드 | HTTP | 상황 |
@@ -170,8 +170,7 @@ POST /api/v1/auth/refresh
   "code": "SUCCESS",
   "message": "토큰이 갱신되었습니다.",
   "data": {
-    "accessToken": "eyJhbGci...(새 토큰)",
-    "refreshToken": "eyJhbGci...(새 토큰)"
+    "accessToken": "eyJhbGci...(새 토큰)"
   }
 }
 ```
@@ -181,6 +180,11 @@ POST /api/v1/auth/refresh
 |------|------|------|
 | EXPIRED_TOKEN | 401 | refreshToken 만료 |
 | INVALID_TOKEN | 401 | 유효하지 않은 토큰 |
+
+> refreshToken은 새로 발급하지 않는다. 로그인 후 12시간이 지나면 다시 로그인해야 한다.
+> 인증이 필요한 API에 토큰이 없거나 만료된 토큰을 보내면 `401` + `{"code": "UNAUTHORIZED"}`를 돌려준다(이전에는 본문 없는 403).
+> FE(`api/client.ts`)는 401을 받으면 이 API로 accessToken을 한 번 갱신해 원래 요청을 다시 보내고, 갱신에 실패하면 로그인 화면으로 보낸다.
+> 토큰과 사용자 정보는 `sessionStorage`에 저장해 브라우저 탭·창을 닫으면 로그아웃된다.
 
 ---
 
@@ -204,6 +208,7 @@ Authorization: Bearer <token>
     "name": "강다은",
     "role": "MEMBER",
     "jobTitle": "시니어 FE 엔지니어",
+    "bio": "결제 시스템을 만드는 프론트엔드 개발자",
     "teamId": 1,
     "teamName": "Product A팀"
   }
@@ -222,14 +227,16 @@ Authorization: Bearer <token>
 ```json
 {
   "name": "강다은",
-  "jobTitle": "시니어 FE 엔지니어"
+  "jobTitle": "시니어 FE 엔지니어",
+  "bio": "결제 시스템을 만드는 프론트엔드 개발자"
 }
 ```
 
 | 필드 | 타입 | 필수 | 검증 규칙 |
 |------|------|------|-----------|
 | name | string | O | 2~20자 (공백 불가) |
-| jobTitle | string | X | 최대 50자. `null` 또는 빈 문자열 전송 시 직함 제거 |
+| jobTitle | string | X | 최대 50자. 생략·`null`이면 기존 값 유지, 빈 문자열이면 직함 제거 |
+| bio | string | X | 한 줄 소개, 최대 100자. 생략·`null`이면 기존 값 유지, 빈 문자열이면 제거 |
 
 **Response** `200`
 ```json
@@ -243,6 +250,7 @@ Authorization: Bearer <token>
     "name": "강다은",
     "role": "MEMBER",
     "jobTitle": "시니어 FE 엔지니어",
+    "bio": "결제 시스템을 만드는 프론트엔드 개발자",
     "teamId": 1,
     "teamName": "Product A팀"
   }
@@ -250,13 +258,85 @@ Authorization: Bearer <token>
 ```
 
 > 회원가입 시 입력한 이름/직함을 멤버가 직접 수정할 수 있는 엔드포인트.  
-> 변경 후 FE는 `authStore`와 `localStorage` 토큰을 즉시 갱신하여 화면에 반영.
+> 변경 후 FE는 `authStore`의 사용자 정보를 즉시 갱신하여 화면에 반영.
 
 **에러**
 | 코드 | HTTP | 상황 |
 |------|------|------|
-| INVALID_INPUT | 400 | name 빈 값 |
+| INVALID_INPUT | 400 | name 빈 값 또는 길이 초과 (jobTitle 50자, bio 100자) |
 | UNAUTHORIZED | 401 | 토큰 없음/만료 |
+
+---
+
+### 2.3 내 비밀번호 변경
+```
+PATCH /api/v1/users/me/password
+Authorization: Bearer <token>
+```
+
+**Request Body**
+```json
+{
+  "currentPassword": "oldPass1!",
+  "newPassword": "newPass2@"
+}
+```
+
+| 필드 | 타입 | 필수 | 검증 규칙 |
+|------|------|------|-----------|
+| currentPassword | string | O | 현재 비밀번호 |
+| newPassword | string | O | 회원가입과 동일: 8자 이상, 영문·숫자·특수문자(`@$!%*#?&`) 포함 |
+
+**Response** `200` — `data` 없음
+
+> 로그인한 상태에서 현재 비밀번호를 확인한 뒤 변경한다. 기존 토큰은 그대로 유효하다.
+
+**에러**
+| 코드 | HTTP | 상황 |
+|------|------|------|
+| INVALID_CURRENT_PASSWORD | 400 | 현재 비밀번호 불일치 |
+| INVALID_INPUT | 400 | 새 비밀번호 규칙 위반 |
+| UNAUTHORIZED | 401 | 토큰 없음/만료 |
+
+---
+
+### 2.4 프로필 이미지
+
+FE가 업로드 전에 가운데를 정사각형으로 잘라 256×256으로 줄이고 WebP(미지원 브라우저는 JPEG)로 약 40KB 이하로 압축한다.
+서버는 최종 안전장치로 100KB까지 받고, 파일 형식은 확장자가 아니라 파일 내용(PNG·JPEG·WebP 시그니처)으로 판별한다.
+이미지는 `user_profile_images` 테이블에 저장한다.
+
+**업로드/교체**
+```
+PUT /api/v1/users/me/profile-image
+Authorization: Bearer <token>
+Content-Type: multipart/form-data   (파트 이름: image)
+```
+Response `200` — `data` 없음
+
+**삭제**
+```
+DELETE /api/v1/users/me/profile-image
+Authorization: Bearer <token>
+```
+Response `200` — `data` 없음 (이미지가 없어도 200)
+
+**조회**
+```
+GET /api/v1/users/{userId}/profile-image
+Authorization: Bearer <token>
+```
+- `200`: 이미지 바이트 그대로 (`Content-Type: image/webp|image/jpeg|image/png`, `Cache-Control: no-cache, private`)
+- `204`: 이미지 없음 → FE는 이름 첫 글자 아바타를 표시
+- 본인 또는 같은 팀 사람만 조회 가능. `<img src>`로는 인증 헤더를 보낼 수 없어 FE가 blob으로 받아 표시한다.
+
+**에러**
+| 코드 | HTTP | 상황 |
+|------|------|------|
+| INVALID_FILE_FORMAT | 400 | PNG·JPEG·WebP가 아님 |
+| PROFILE_IMAGE_TOO_LARGE | 413 | 100KB 초과 |
+| FORBIDDEN | 403 | 다른 팀 사람의 이미지 조회 |
+| USER_NOT_FOUND | 404 | 존재하지 않는 사용자 |
 
 ---
 
@@ -328,6 +408,76 @@ Authorization: Bearer <token> (MEMBER)
 |------|------|------|
 | TEAM_NOT_FOUND | 404 | 유효하지 않은 초대 코드 |
 | ALREADY_IN_TEAM | 409 | 이미 팀에 소속된 멤버 |
+
+---
+
+### 3.2b 팀 이름 변경 (리더 전용)
+```
+PATCH /api/v1/teams/{teamId}
+Authorization: Bearer <token> (LEADER)
+```
+
+**Request Body**
+```json
+{
+  "name": "플랫폼팀"
+}
+```
+
+| 필드 | 타입 | 필수 | 검증 규칙 |
+|------|------|------|-----------|
+| name | string | O | 앞뒤 공백 제외 2~30자 (저장 시 앞뒤 공백 제거) |
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "data": {
+    "teamId": 1,
+    "teamName": "플랫폼팀"
+  }
+}
+```
+
+> 해당 팀의 리더만 변경할 수 있다. FE는 응답의 `teamName`으로 `authStore`의 사용자 정보를 갱신한다.
+
+**에러**
+| 코드 | HTTP | 상황 |
+|------|------|------|
+| INVALID_INPUT | 400 | 이름 길이 위반 |
+| FORBIDDEN | 403 | 멤버이거나 다른 팀의 리더 |
+| TEAM_NOT_FOUND | 404 | 존재하지 않는 팀 |
+
+---
+
+### 3.2c 초대 코드 재발급 (리더 전용)
+```
+POST /api/v1/teams/{teamId}/invite-code
+Authorization: Bearer <token> (LEADER)
+```
+Request Body 없음.
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "data": {
+    "teamId": 1,
+    "inviteCode": "READB-9F3C1A"
+  }
+}
+```
+
+> 해당 팀의 리더만 호출할 수 있다. 기존 코드는 즉시 무효가 되고(3.2 참여 시 `TEAM_NOT_FOUND`), 이미 가입한 멤버에게는 영향이 없다.
+> FE는 응답의 `inviteCode`로 `authStore`의 사용자 정보를 갱신한다.
+
+**에러**
+| 코드 | HTTP | 상황 |
+|------|------|------|
+| FORBIDDEN | 403 | 멤버이거나 다른 팀의 리더 |
+| TEAM_NOT_FOUND | 404 | 존재하지 않는 팀 |
 
 ---
 
@@ -1939,6 +2089,8 @@ Authorization: Bearer <token> (LEADER)
 |------|------|------|
 | `EMAIL_ALREADY_EXISTS` | 409 | 이미 사용 중인 이메일 |
 | `INVALID_CREDENTIALS` | 401 | 이메일 또는 비밀번호 불일치 |
+| `INVALID_CURRENT_PASSWORD` | 400 | 비밀번호 변경 시 현재 비밀번호 불일치 |
+| `PROFILE_IMAGE_TOO_LARGE` | 413 | 프로필 이미지 100KB 초과 |
 | `EXPIRED_TOKEN` | 401 | 액세스/리프레시 토큰 만료 |
 | `INVALID_TOKEN` | 401 | 유효하지 않은 토큰 |
 | `UNAUTHORIZED` | 401 | 인증이 필요합니다 |
@@ -1963,6 +2115,8 @@ Authorization: Bearer <token> (LEADER)
 ---
 
 ## FE 개발 참고: Axios 인터셉터 예시
+
+> 초기 설계 예시다. 실제 구현은 `FE/src/api/client.ts`·`FE/src/api/authStorage.ts`를 기준으로 한다 (refreshToken 재발급 없음, sessionStorage 사용, 동시 401은 갱신 1회로 처리).
 
 ```typescript
 // api/client.ts
@@ -2312,3 +2466,8 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-11-20 | v3.9 | 7.1-T `analyze-test`: COMPLETED 미팅도 재분석 허용 (TRANSCRIBING/ANALYZING일 때만 409). 재분석 시 기존 분석 결과 삭제 후 저장하며 `meeting_id` unique 충돌 수정. |
 | 2026-11-20 | v4.0 | **5.5절 신규**: `PATCH /meetings/{id}` 미팅 정보(제목·일정) 수정 (리더 전용, 분석 상태 무관, 멤버 변경 미지원). |
 | 2026-11-23 | v4.1 | 4.1 `GET /teams/{teamId}/dashboard` 응답에 `monthlyTrend` 추가 — 월별 헬스 스코어 평균 추이 (리더 대시보드 꺾은선 그래프용). |
+| 2026-11-23 | v4.2 | 2.1·2.2 `bio`(한 줄 소개, 최대 100자) 추가, 2.2 name 2~20자·jobTitle 50자 검증을 실코드에 반영. **2.3절 신규**: `PATCH /users/me/password` 비밀번호 변경 (현재 비밀번호 확인, INVALID_CURRENT_PASSWORD 400). DB: `users.bio` 컬럼 추가 (`BE/db/migrations/2026-11-23_add_bio_to_users.sql`). |
+| 2026-11-23 | v4.3 | **3.2b절 신규**: `PATCH /teams/{teamId}` 팀 이름 변경 (해당 팀 리더 전용, 2~30자). |
+| 2026-11-23 | v4.4 | 1.2 refreshToken 만료 14일 → 12시간. 1.3 갱신 응답을 실코드 기준 `accessToken`만으로 정정. 인증 실패 시 403(본문 없음) → 401 `UNAUTHORIZED`. FE 토큰 저장소 localStorage → sessionStorage. |
+| 2026-11-23 | v4.5 | **3.2c절 신규**: `POST /teams/{teamId}/invite-code` 초대 코드 재발급 (해당 팀 리더 전용, 기존 코드 즉시 무효). |
+| 2026-11-23 | v4.6 | **2.4절 신규**: 프로필 이미지 업로드·삭제·조회 (`/users/me/profile-image`, `/users/{userId}/profile-image`). DB: `user_profile_images` 테이블 추가 (`BE/db/migrations/2026-11-23_user_profile_images.sql`). |
