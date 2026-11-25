@@ -1301,6 +1301,10 @@ public class AnalysisService {
 
             prompt.append("""
                     위 데이터를 바탕으로 리더를 위한 미팅 전 코칭 가이드를 생성하세요.
+                    OVERREPORT, UNDERREPORT, SAFE 등 입력에 포함된 내부 분류 코드명은 출력에 그대로 쓰지 마세요. 
+                    필요할 때는 의미를 일상적인 한국어로 풀어 쓰세요. 예를 들어 UNDERREPORT는 “자기 평가 점수가 대화 행동 기반 점수보다 낮았습니다”처럼 표현하세요.
+                    분류값만으로 멤버의 성향이나 심리 상태를 단정하지 마세요. 풀어 쓸 근거가 부족하면 해당 분류에 대한 언급을 생략하세요.
+                    이 규칙은 focusArea, guideSummary, evidence, suggestedQuestions의 모든 출력 문구에 적용하세요.
 
                     [focusArea]
                     - 이번 미팅의 코칭 핵심 키워드를 짧게 작성하세요. 예: 경청 강화, 약속 점검.
