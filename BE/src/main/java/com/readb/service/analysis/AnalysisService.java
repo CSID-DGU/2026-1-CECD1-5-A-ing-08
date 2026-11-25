@@ -273,7 +273,6 @@ public class AnalysisService {
             - gap > 0 → OVERREPORT (자기보고 > 행동 → 사회적 바람직성 편향 가능성)
             - gap ≤ 0 → UNDERREPORT (자기보고 ≤ 행동 → 겸손/보수적 → 안전)
 
-            위험도(자기보고-행동 격차 크기): |gap|<15→SAFE, <25→CAUTION, <35→WARNING, ≥35→DANGER
             (단, 한 미팅의 절대 점수보다 본인의 이전 추세 대비 변화가 더 신뢰할 만한 신호임)
 
             [Execution Gap (0–100)]
@@ -468,7 +467,7 @@ public class AnalysisService {
         AlignmentResult alignment = evaluateAlignment(surveyTopic, transcript, meetingId);
 
         transactionTemplate.executeWithoutResult(
-                tx -> persistResults(meetingId, meeting, step2, step3, alignment, durationSec));
+                tx -> persistResults(meetingId, meeting, step2, step3, alignment, durationSec, surveyScore));
     }
 
     @Transactional(readOnly = true)
@@ -508,11 +507,11 @@ public class AnalysisService {
     }
 
     protected void persistResults(Long meetingId, Meeting meeting, Map<String, Object> step2, Map<String, Object> step3,
-                                  AlignmentResult alignment, Integer durationSec) {
+                                  AlignmentResult alignment, Integer durationSec, Double surveyScore) {
         analysisRepository.findByMeetingId(meetingId).ifPresent(analysisRepository::delete);
         // IDENTITY insert는 즉시 실행되므로 delete를 먼저 DB에 반영해야 meeting_id unique 충돌이 안 난다
         analysisRepository.flush();
-        analysisRepository.save(buildAnalysis(meetingId, step2, step3, alignment, durationSec));
+        analysisRepository.save(buildAnalysis(meetingId, step2, step3, alignment, durationSec, surveyScore));
         generatedGuideService.deletePost(meetingId);
 
         promiseRepository.deleteByMeetingId(meetingId);
@@ -746,13 +745,17 @@ public class AnalysisService {
 
     @SuppressWarnings("unchecked")
     private Analysis buildAnalysis(Long meetingId, Map<String, Object> step2, Map<String, Object> step3,
-                                   AlignmentResult alignment, Integer durationSec) {
+                                   AlignmentResult alignment, Integer durationSec, Double surveyScore) {
+        Double safetyScore = computeSafetyScore(step2.get("speechActs"), durationSec);
+        // Gemini는 서버 safetyScore를 모르므로 honestyGap도 서버에서 계산 (조회 API의 buildGaps와 같은 식)
+        Double honestyGap = (surveyScore != null && safetyScore != null)
+                ? Math.round((surveyScore - safetyScore) * 10.0) / 10.0 : null;
         return Analysis.builder()
                 .meetingId(meetingId)
-                .safetyScore(computeSafetyScore(step2.get("speechActs"), durationSec))
+                .safetyScore(safetyScore)
                 .alignmentGap(alignment.score())
                 .alignmentGapDetail(alignment.detail())
-                .honestyGap(toDouble(step3.get("honestyGap")))
+                .honestyGap(honestyGap)
                 .executionGap(toDouble(step3.get("executionGap")))
                 .speechActs((Map<String, Object>) step2.get("speechActs"))
                 .blockerKeywords((List<String>) step2.get("blockerKeywords"))
@@ -889,12 +892,11 @@ public class AnalysisService {
     }
 
     private static RiskLevel computeRiskLevel(Double honestyGap) {
-        if (honestyGap == null) return RiskLevel.SAFE;
-        // 두 점수 모두 baseline 40 기준으로 정렬되어 정상 격차는 0 부근. SAFE 밴드를 넓혀 정상 변동을 위험으로 오판하지 않음.
-        double abs = Math.abs(honestyGap);
-        if (abs < 15) return RiskLevel.SAFE;
-        if (abs < 25) return RiskLevel.CAUTION;
-        if (abs < 35) return RiskLevel.WARNING;
+        // UNDERREPORT(자기보고 ≤ 행동)는 겸손/보수적 응답이라 위험 신호가 아님 → 항상 SAFE
+        if (honestyGap == null || honestyGap <= 0) return RiskLevel.SAFE;
+        if (honestyGap < 15) return RiskLevel.SAFE;
+        if (honestyGap < 25) return RiskLevel.CAUTION;
+        if (honestyGap < 35) return RiskLevel.WARNING;
         return RiskLevel.DANGER;
     }
 

@@ -57,10 +57,10 @@ gap = surveyScore − safetyScore  (부호 있는 값)
 | gap 값 | direction | riskLevel | 의미 |
 |--------|-----------|-----------|------|
 | ≤ 0 | UNDERREPORT | SAFE | 보수적 응답 — 알림 없음 |
-| 1 ~ 20 | OVERREPORT | SAFE | 표면과 행동 대체로 일치 |
-| 21 ~ 40 | OVERREPORT | CAUTION | 약간의 과장 보고 가능성 |
-| 41 ~ 60 | OVERREPORT | WARNING | "괜찮다"고 하지만 행동이 안 따라감 |
-| 61+ | OVERREPORT | DANGER | 심각한 괴리 — 즉시 관심 |
+| 1 ~ 14 | OVERREPORT | SAFE | 표면과 행동 대체로 일치 |
+| 15 ~ 24 | OVERREPORT | CAUTION | 약간의 과장 보고 가능성 |
+| 25 ~ 34 | OVERREPORT | WARNING | "괜찮다"고 하지만 행동이 안 따라감 |
+| 35+ | OVERREPORT | DANGER | 심각한 괴리 — 즉시 관심 |
 
 **설계 근거**: 현업 종사자들은 에너지 레벨을 보수적(2~3)으로 응답하는 경향이 있어, 절대값 기반 Gap은 겸손한 사람도 위험으로 오분류한다. OVERREPORT 방향만 리스크 대상으로 함.
 

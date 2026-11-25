@@ -24,10 +24,11 @@ ReadB(리드비)는 1on1 미팅의 Honesty Gap을 AI로 수치화하는 B2B HR S
 #### riskLevel (OVERREPORT 일 때만 적용)
 | gap 값  | riskLevel  |
 |---------|------------|
-| 1~20    | SAFE       |
-| 21~40   | CAUTION    |
-| 41~60   | WARNING    |
-| 61+     | DANGER     |
+| 0 이하  | SAFE       |
+| 1~14    | SAFE       |
+| 15~24   | CAUTION    |
+| 25~34   | WARNING    |
+| 35+     | DANGER     |
 
 **변경 이유 (2026-05-08 이후 확정)**: 현업 종사자들이 에너지 레벨을 보수적(2~3)으로 응답하는 경향 때문에 절대값 기반이면 겸손한 응답자도 위험으로 오분류됨. UNDERREPORT는 자기 평가가 행동보다 박한 것이므로 위험 신호가 아니라 오히려 건강한 상태로 간주.
 

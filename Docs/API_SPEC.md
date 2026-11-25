@@ -1365,10 +1365,10 @@ gap = surveyScore − safetyScore (부호 있는 값)
 | gap 값 | direction | riskLevel | 의미 |
 |---------|-----------|-----------|------|
 | gap ≤ 0 | UNDERREPORT | SAFE | 보수적 응답 (행동이 서베이보다 양호) — 위험 아님 |
-| 1 ~ 20 | OVERREPORT | SAFE | 표면과 행동이 대체로 일치 |
-| 21 ~ 40 | OVERREPORT | CAUTION | 약간의 과장 보고 가능성 |
-| 41 ~ 60 | OVERREPORT | WARNING | 상당한 괴리 — "괜찮다"고 하지만 행동이 안 따라감 |
-| 61+ | OVERREPORT | DANGER | 심각한 괴리 — 즉시 관심 필요 |
+| 1 ~ 14 | OVERREPORT | SAFE | 표면과 행동이 대체로 일치 |
+| 15 ~ 24 | OVERREPORT | CAUTION | 약간의 과장 보고 가능성 |
+| 25 ~ 34 | OVERREPORT | WARNING | 상당한 괴리 — "괜찮다"고 하지만 행동이 안 따라감 |
+| 35+ | OVERREPORT | DANGER | 심각한 괴리 — 즉시 관심 필요 |
 
 > **설계 근거**: 현업 종사자들은 에너지 레벨을 보수적으로 응답하는 경향이 있음 (2~3 선택 빈도 높음).  
 > 절대값 기반 Gap은 "겸손한 응답"도 위험으로 오분류하므로, 부호 있는 방향성 기반으로 설계.  
@@ -2392,10 +2392,10 @@ direction = gap > 0 ? "OVERREPORT" : "UNDERREPORT"
 | gap 값 | direction | riskLevel | 의미 |
 |--------|-----------|-----------|------|
 | ≤ 0 | UNDERREPORT | SAFE | 보수적 응답 — 알림 없음 |
-| 1 ~ 20 | OVERREPORT | SAFE | 표면과 행동 대체로 일치 |
-| 21 ~ 40 | OVERREPORT | CAUTION | 약간의 과장 보고 가능성 |
-| 41 ~ 60 | OVERREPORT | WARNING | "괜찮다"고 하지만 행동이 안 따라감 |
-| 61+ | OVERREPORT | DANGER | 심각한 괴리 — 즉시 관심 |
+| 1 ~ 14 | OVERREPORT | SAFE | 표면과 행동 대체로 일치 |
+| 15 ~ 24 | OVERREPORT | CAUTION | 약간의 과장 보고 가능성 |
+| 25 ~ 34 | OVERREPORT | WARNING | "괜찮다"고 하지만 행동이 안 따라감 |
+| 35+ | OVERREPORT | DANGER | 심각한 괴리 — 즉시 관심 |
 
 > **OVERREPORT 방향만 리스크 알림 대상.** 현업 종사자들의 보수적 에너지 레벨 응답 패턴(2~3 빈도 높음)을 고려하여, UNDERREPORT 방향은 CONSERVATIVE 사분면 표시만 하고 알림하지 않음.
 
@@ -2471,3 +2471,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-11-23 | v4.4 | 1.2 refreshToken 만료 14일 → 12시간. 1.3 갱신 응답을 실코드 기준 `accessToken`만으로 정정. 인증 실패 시 403(본문 없음) → 401 `UNAUTHORIZED`. FE 토큰 저장소 localStorage → sessionStorage. |
 | 2026-11-23 | v4.5 | **3.2c절 신규**: `POST /teams/{teamId}/invite-code` 초대 코드 재발급 (해당 팀 리더 전용, 기존 코드 즉시 무효). |
 | 2026-11-23 | v4.6 | **2.4절 신규**: 프로필 이미지 업로드·삭제·조회 (`/users/me/profile-image`, `/users/{userId}/profile-image`). DB: `user_profile_images` 테이블 추가 (`BE/db/migrations/2026-11-23_user_profile_images.sql`). |
+| 2026-11-25 | v4.7 | Honesty Gap riskLevel 구간을 실코드 기준으로 정정 (0 이하·1~14 SAFE / 15~24 CAUTION / 25~34 WARNING / 35+ DANGER, UNDERREPORT는 항상 SAFE). `analyses.honesty_gap`을 Gemini 값 대신 서버에서 `surveyScore − safetyScore`로 저장 (`BE/db/migrations/2026-11-25_recompute_honesty_gap.sql`). |
