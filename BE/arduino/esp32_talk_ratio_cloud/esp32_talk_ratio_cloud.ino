@@ -43,7 +43,7 @@ LiquidCrystal_I2C lcd(LCD_ADDR, 16, 2);
 //  설정
 // ═══════════════════════════════════════════════════════
 // 배포 BE의 active 엔드포인트 (BE에 /talk-ratio/active 가 배포돼 있어야 함)
-const char* API_URL = "https://be-production-de9a.up.railway.app/api/v1/talk-ratio/active";
+const char* API_URL = "https://2026-1-cecd1-5-a-ing-08-production.up.railway.app/api/v1/talk-ratio/active";
 
 // WiFi 설정 포털용 AP 이름/비번 (카페에서 휴대폰으로 접속)
 const char* AP_NAME = "ReadB-Lamp";
