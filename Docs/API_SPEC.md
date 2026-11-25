@@ -2472,3 +2472,4 @@ trendDelta = thisMonth.avg - avg(prior3MonthMeans)
 | 2026-11-23 | v4.5 | **3.2c절 신규**: `POST /teams/{teamId}/invite-code` 초대 코드 재발급 (해당 팀 리더 전용, 기존 코드 즉시 무효). |
 | 2026-11-23 | v4.6 | **2.4절 신규**: 프로필 이미지 업로드·삭제·조회 (`/users/me/profile-image`, `/users/{userId}/profile-image`). DB: `user_profile_images` 테이블 추가 (`BE/db/migrations/2026-11-23_user_profile_images.sql`). |
 | 2026-11-25 | v4.7 | Honesty Gap riskLevel 구간을 실코드 기준으로 정정 (0 이하·1~14 SAFE / 15~24 CAUTION / 25~34 WARNING / 35+ DANGER, UNDERREPORT는 항상 SAFE). `analyses.honesty_gap`을 Gemini 값 대신 서버에서 `surveyScore − safetyScore`로 저장 (`BE/db/migrations/2026-11-25_recompute_honesty_gap.sql`). |
+| 2026-11-25 | v4.8 | `speechActs` 카운트 기준을 segment → 사안(target)으로 변경: 쪼개진 segment·반복 반박은 같은 사안이면 1회, 한 발화 안의 서로 다른 사안은 각각 1회. 리더 말을 되묻는 확인 질문은 D 제외. 응답 형식 변경 없음 (`target`은 내부 저장값에만 추가). |

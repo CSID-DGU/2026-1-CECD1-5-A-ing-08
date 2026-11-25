@@ -97,14 +97,17 @@ public class AnalysisService {
             판별 근거: 존댓말 방향, 보고 vs 질문 패턴, 의사결정 권한 표현
             단, 발화 앞에 [leader] / [member] 라벨이 있으면 추론하지 말고 라벨을 그대로 따르세요.
 
-            Step B. 멤버 segment 전수 검토
+            Step B. 멤버 발화 전수 검토
             리더 발화는 Speech Act 분류 대상에서 제외합니다. 단, 멤버 발화를 판단할 때 직전 리더 발화를 맥락으로 함께 봅니다.
             전사 텍스트의 처음부터 끝까지 모든 멤버 segment를 하나도 빠짐없이 순서대로 검토하세요. 추출 개수에는 상한이 없습니다.
 
-            Step C. 각 멤버 segment의 화행(illocutionary act) 판단
-            세는 단위는 전사 segment입니다. 한 segment는 각 유형에 최대 1번만 셉니다.
-            한 segment 안의 여러 문장이 같은 유형에 해당하면, 그 유형의 근거가 가장 분명한 문장 하나만 고르세요.
-            한 segment가 여러 유형에 해당하면 해당하는 모든 유형에 각각 넣습니다(예: 같은 segment가 V와 I에 동시에 들어갈 수 있음).
+            Step C. 각 멤버 발화의 화행(illocutionary act) 판단
+            세는 단위는 사안(target)입니다. 사안은 그 말이 무엇에 대한 것인지(예: "few-shot 예시 사용", "배포 일정", "본인 수면 부족")를 뜻합니다.
+            - 전사 과정에서 한 번의 말이 여러 segment로 쪼개질 수 있습니다. 리더 발화가 끼지 않고 이어지는 멤버 segment들은 하나의 turn으로 묶어서 보세요.
+            - 같은 사안에 대한 말은 각 유형에 1번만 셉니다. segment가 여러 개로 나뉘어 있거나, 리더가 반박한 뒤 같은 사안으로 다시 말해도 1번입니다.
+              그 유형의 근거가 가장 분명한 문장 하나만 고르세요.
+            - 한 turn 안에서 서로 다른 사안을 말했다면, 같은 유형이라도 사안마다 각각 셉니다.
+            - 한 문장·turn이 여러 유형에 해당하면 해당하는 모든 유형에 각각 넣습니다(예: 같은 turn이 V와 I에 동시에 들어갈 수 있음).
 
             유형 판단 순서: 문장이 무엇에 대한 말인지 먼저 보세요.
             - 자기 자신(능력, 지식, 몸 상태, 감정)에 대한 말 → vulnerability 후보
@@ -138,6 +141,8 @@ public class AnalysisService {
                - D-X1 리더의 의견에 동의하는 말. 리더가 부정적 의견을 냈고 멤버도 같은 방향의 부정적 의견을 말하면 동의이므로 D가 아닙니다.
                  (예: 리더 "그 방식은 좀 별로인 것 같아요" → 멤버 "네, 저도 그건 별로라고 봐요" = 제외)
                - D-X2 비교 대상(리더나 팀의 의견)이 없는 단순 불만("이건 왜 이래요"), 인신공격
+               - D-X3 리더 말을 되묻거나 확인하는 질문("만약에 고치면요?", "그 말씀은 ~라는 거죠?").
+                 같은 turn에서 이어지는 다른 입장 문장이 있으면 그 문장을 인용합니다.
                판단 방법: 직전 리더 발화나 팀의 기존 방향을 먼저 확인하고, 멤버 문장이 그와 다른 입장인지로 판단하세요.
 
             3. initiative (Commissive Act — 미래 행동에 대한 자발적 제안)
@@ -153,7 +158,7 @@ public class AnalysisService {
                - 행동 동사가 없는 짧은 말("~있으면요", "~그렇죠"), 현재 상태나 불편함 설명("~해서 지저분해요")은 initiative가 아닙니다.
                제외:
                - I-X1 하겠다는 행동 없이 관심이나 감상만 말하는 것: "보안 쪽에 관심은 있어요", "그 분야 재밌을 것 같아요"
-                 (단, 같은 segment에 "~해보고 싶어요"처럼 구체적 행동이 이어지면 그 문장은 I-4로 포함합니다)
+                 (단, 같은 turn에 "~해보고 싶어요"처럼 구체적 행동이 이어지면 그 문장은 I-4로 포함합니다)
                - I-X2 과거 작업 경과 보고(이미 한 일을 설명): "API는 버전별로 나눠서 붙여놨거든요", "그렇게 처리해 뒀어요"
                - I-X3 이미 신청하거나 예약한 외부 일정 참석(세미나, 교육, 행사): "다음 달 세미나는 신청해 뒀어요".
                  이 내용은 promises에서 다룹니다. 스스로 정한 업무·학습 행동은 I-4로 포함합니다.
@@ -162,8 +167,9 @@ public class AnalysisService {
             분류 원칙 (recall 우선): 위 제외 항목에 명백히 해당하는 경우만 빼고, 포함 항목에 부분적으로라도 해당하면 포함하세요.
             각 act에 confidence("high" 또는 "medium")를 부여하세요. 정의에 명확히 부합하면 high,
             맥락상 그렇게 읽히지만 다소 애매하면 medium으로 포함하세요.
-            text에는 segment 전문이 아니라 근거가 되는 문장 하나만 원문 그대로 인용하고(여러 문장을 합치지 마세요),
-            timestamp는 그 문장이 속한 segment의 start 값(초)을 그대로 쓰세요.
+            text에는 발화 전문이 아니라 근거가 되는 문장 하나만 원문 그대로 인용하고(여러 문장을 합치지 마세요),
+            timestamp는 그 문장이 속한 turn의 첫 segment start 값(초)을 쓰세요.
+            target에는 그 말의 사안을 10자 안팎의 명사구로 쓰세요. 같은 사안이면 같은 표현을 쓰세요.
             rule에는 적용한 포함 규칙 ID(예: "V-3", "D-2")를 쓰세요.
 
             Step D. 발화 비율 추정
@@ -186,7 +192,7 @@ public class AnalysisService {
 
             [Few-shot 예시]
 
-            예시 1 — 한 segment 안의 두 문장이 각각 V와 I에 해당:
+            예시 1 — 한 turn 안의 두 문장이 각각 V와 I에 해당:
             리더: "요즘 배포 쪽은 어때요?"
             멤버: "솔직히 쿠버네티스는 아직 잘 몰라서 막막해요. 그래서 스테이징에 먼저 띄워보면서 설정을 하나씩 정리해보려고요."
             분류: 첫 문장 vulnerability(V-2), 둘째 문장 initiative(I-1) / 문장마다 따로 인용
@@ -223,12 +229,20 @@ public class AnalysisService {
             멤버: "다음 달 컨퍼런스는 이미 신청해 뒀어요. 다녀와서 로그 수집 쪽은 제가 직접 붙여보고 싶어요."
             분류: 첫 문장 해당 없음(I-X3), 둘째 문장 initiative(I-4)
 
+            예시 9 — segment가 쪼개져도 같은 사안이면 1번, 다른 사안이면 각각:
+            리더: "예시 문장을 이 케이스에 맞게 고치면 되지 않을까요?"
+            멤버(segment 1): "만약에 고치면요?"
+            멤버(segment 2): "그렇게 할 수 있긴 하죠. 근데 그러면 이 케이스만 잘 맞을 거예요. 그래서 예시를 안 주는 게 더 나을 수 있어요."
+            분류: constructiveDissent 1개(D-3, target "few-shot 예시 수정") / segment 1은 확인 질문(D-X3)이고 같은 사안이므로 segment 2 문장 하나만 인용
+            멤버: "그 방식은 비용이 계속 나갈 것 같아요. 그리고 일정도 이번 주 안에는 무리일 것 같아요."
+            분류: constructiveDissent 2개(D-5 "외부 라이브러리 도입", D-5 "이번 주 일정") / 서로 다른 사안
+
             반드시 아래 JSON 형식으로만 응답하세요. 배열 항목 수는 예시와 무관하게 실제로 찾은 만큼 넣으세요(0개도 가능):
             {
               "speechActs": {
-                "vulnerability": [{"text": "해당 문장 원문 그대로", "timestamp": 초단위_숫자, "confidence": "high 또는 medium", "rule": "V-1"}],
-                "constructiveDissent": [{"text": "해당 문장 원문 그대로", "timestamp": 초단위_숫자, "confidence": "high 또는 medium", "rule": "D-3"}],
-                "initiative": [{"text": "해당 문장 원문 그대로", "timestamp": 초단위_숫자, "confidence": "high 또는 medium", "rule": "I-2"}]
+                "vulnerability": [{"text": "해당 문장 원문 그대로", "timestamp": 초단위_숫자, "target": "사안", "confidence": "high 또는 medium", "rule": "V-1"}],
+                "constructiveDissent": [{"text": "해당 문장 원문 그대로", "timestamp": 초단위_숫자, "target": "사안", "confidence": "high 또는 medium", "rule": "D-3"}],
+                "initiative": [{"text": "해당 문장 원문 그대로", "timestamp": 초단위_숫자, "target": "사안", "confidence": "high 또는 medium", "rule": "I-2"}]
               },
               "talkRatio": {"leaderRatio": 숫자, "memberRatio": 숫자},
               "topics": ["주제1", "주제2"],
@@ -456,7 +470,7 @@ public class AnalysisService {
 
         String step2Raw = geminiAdapter.chat(STEP2_SYSTEM, transcript);
         Map<String, Object> step2 = parseJson(step2Raw);
-        dedupeSpeechActsBySegment(step2);
+        dedupeSpeechActsByTarget(step2);
         log.info("Step2(Gemini) 완료. meetingId={}", meetingId);
 
         String step3UserPrompt = buildStep3UserPrompt(step2, surveyScore, durationSec, prevPromises, context);
@@ -639,17 +653,18 @@ public class AnalysisService {
         return Math.min(100.0, score);
     }
 
-    // 세는 단위는 segment: 유형별로 같은 segment(timestamp)의 중복 인용은 첫 항목만 남긴다.
-    // LLM이 한 segment에서 문장을 여러 개 뽑아도 카운트가 부풀지 않도록 저장 전에 결정적으로 정리.
+    // 세는 단위는 사안: 유형별로 같은 turn(timestamp)·같은 사안(target)의 중복 인용은 첫 항목만 남긴다.
+    // 한 turn에서 서로 다른 사안은 각각 센다. target이 없으면 timestamp만으로 판단(기존 동작).
     @SuppressWarnings("unchecked")
-    static void dedupeSpeechActsBySegment(Map<String, Object> step2) {
+    static void dedupeSpeechActsByTarget(Map<String, Object> step2) {
         if (!(step2.get("speechActs") instanceof Map<?, ?> acts)) return;
         for (Map.Entry<String, Object> e : ((Map<String, Object>) acts).entrySet()) {
             if (!(e.getValue() instanceof List<?> list)) continue;
-            Set<Double> seen = new HashSet<>();
+            Set<String> seen = new HashSet<>();
             e.setValue(list.stream()
                     .filter(i -> !(i instanceof Map<?, ?> m && m.get("timestamp") instanceof Number ts)
-                            || seen.add(ts.doubleValue()))
+                            || seen.add(ts.doubleValue() + "|"
+                                    + (m.get("target") instanceof String t ? t.replaceAll("\\s+", "") : "")))
                     .toList());
         }
     }
